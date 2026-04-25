@@ -1,11 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { StatusBar } from "@/components/layout/StatusBar";
-import { Panel } from "@/components/shared/Panel";
+import { Module } from "@/components/shared/Module";
 import { useAppStore } from "@/store/useAppStore";
 import { useCases } from "@/hooks/useCases";
-import { useState } from "react";
 
 export default function ExportPage() {
   const { data: cases } = useCases();
@@ -19,21 +19,21 @@ export default function ExportPage() {
   };
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-[var(--paper)] text-[var(--ink)]">
+    <div className="flex h-screen flex-col overflow-hidden bg-[var(--bg)] text-[var(--fg)]">
       <Navbar />
       <main className="flex-1 overflow-y-auto">
-        <div className="flex flex-col gap-6 p-6">
-          <header className="flex flex-col gap-1 border-b border-[var(--ink-rule)] pb-5">
-            <span className="figcap">Export</span>
+        <div className="mx-auto flex max-w-[1600px] flex-col gap-5 p-5">
+          <header className="flex flex-col gap-1 border-b border-[var(--line)] pb-5">
+            <span className="kbd">Export</span>
             <h1
-              className="display text-[32px] leading-[1.05] text-[var(--ink)]"
-              style={{ letterSpacing: "-0.022em" }}
+              className="display-tight text-[34px] leading-[0.95]"
+              style={{ letterSpacing: "-0.04em" }}
             >
               Schedules &amp; results, ready to copy.
             </h1>
           </header>
 
-          <div className="flex flex-col gap-5">
+          <div className="grid grid-cols-1 gap-5">
             {(cases ?? []).map((c, i) => {
               const r = results[c.id];
               const json = r
@@ -49,21 +49,22 @@ export default function ExportPage() {
                   )
                 : null;
               return (
-                <Panel
+                <Module
                   key={c.id}
-                  figure={String(i + 1).padStart(2, "0")}
-                  caption={c.name}
-                  description={
+                  label={`Case ${String(i + 1).padStart(2, "0")} · ${c.name}`}
+                  tag={c.id.toUpperCase()}
+                  hint={
                     r?.simulate
                       ? `S_orbit ${r.simulate.score.S_orbit.toFixed(3)}`
                       : "not run"
                   }
+                  variant={json ? "live" : "default"}
                   actions={
                     json ? (
                       <button
                         onClick={() => copy(c.id, json)}
-                        className="border border-[var(--ink)] bg-transparent px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-[var(--ink)] transition-colors hover:bg-[var(--ink)] hover:text-[var(--paper)]"
-                        style={{ fontFamily: "var(--font-mono)" }}
+                        className="mono border border-[var(--line-bright)] bg-transparent px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-[var(--fg-mute)] transition-colors hover:border-[var(--phos)] hover:text-[var(--phos)]"
+                        style={{ borderRadius: 2 }}
                       >
                         {copied === c.id ? "Copied" : "Copy JSON"}
                       </button>
@@ -72,17 +73,17 @@ export default function ExportPage() {
                 >
                   {json ? (
                     <pre
-                      className="max-h-72 overflow-auto border border-[var(--ink-rule)] bg-[var(--paper-onion)] p-3 text-[11px] leading-[1.55] text-[var(--ink)]"
-                      style={{ fontFamily: "var(--font-mono)" }}
+                      className="mono max-h-72 overflow-auto border border-[var(--line)] bg-[var(--bg-sunk)] p-3 text-[11px] leading-[1.55] text-[var(--fg)]"
+                      style={{ borderRadius: 2 }}
                     >
                       {json}
                     </pre>
                   ) : (
-                    <p className="text-[13px] italic text-[var(--ink-mute)]">
+                    <p className="text-[13px] italic text-[var(--fg-mute)]">
                       Run this case from the Console to populate output.
                     </p>
                   )}
-                </Panel>
+                </Module>
               );
             })}
           </div>

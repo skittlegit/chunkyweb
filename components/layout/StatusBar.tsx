@@ -1,9 +1,9 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useAppStore } from "@/store/useAppStore";
 import { useCases } from "@/hooks/useCases";
 import { api } from "@/lib/api";
-import { useEffect, useState } from "react";
 import { StatusDot } from "@/components/shared/StatusDot";
 
 export function StatusBar() {
@@ -23,54 +23,62 @@ export function StatusBar() {
     };
   }, []);
 
-  const apiStatus: "normal" | "success" | "danger" =
-    casesError || healthy === false
-      ? "danger"
-      : casesFetching || healthy === null
-      ? "normal"
-      : "success";
-  const apiLabel =
-    casesError || healthy === false
-      ? "OFFLINE"
-      : casesFetching || healthy === null
-      ? "CONNECTING"
-      : "READY";
+  const apiOk = !casesError && healthy !== false;
+  const apiStatus = !apiOk
+    ? ("danger" as const)
+    : healthy === null || casesFetching
+    ? ("warn" as const)
+    : ("phos" as const);
+  const apiLabel = !apiOk
+    ? "OFFLINE"
+    : healthy === null || casesFetching
+    ? "LINKING"
+    : "ONLINE";
 
   const tilesValue = result?.plan
     ? `${result.plan.diagnostics.n_tiles_imaged}/${result.plan.diagnostics.n_tiles_total}`
     : "—";
-
   const orbitValue = result?.simulate
     ? result.simulate.score.S_orbit.toFixed(3)
     : "—";
+  const lastRun = result?.ranAt
+    ? new Date(result.ranAt).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+      }) + "Z"
+    : "—";
 
   return (
-    <footer className="flex h-9 shrink-0 items-stretch border-t border-[var(--ink-rule)] bg-[var(--paper)] text-[12px]">
-      <Item>
-        <StatusDot status={apiStatus} pulse={apiStatus === "normal"} />
-        <Key>api</Key>
-        <Val>{apiLabel}</Val>
-      </Item>
-      <Item>
-        <Key>case</Key>
-        <Val>{selectedCaseId.toUpperCase()}</Val>
-      </Item>
-      <Item>
-        <Key>tiles</Key>
-        <Val>{tilesValue}</Val>
-      </Item>
-      <div className="flex flex-1 items-center justify-end gap-3 px-5">
-        <Key>S_orbit</Key>
+    <footer className="grid h-9 shrink-0 grid-cols-[auto_auto_auto_auto_1fr_auto] items-stretch border-t border-[var(--line)] bg-[var(--bg)] text-[12px]">
+      <Cell>
+        <StatusDot status={apiStatus} pulse={apiStatus === "warn"} size={6} />
+        <K>api</K>
+        <V>{apiLabel}</V>
+      </Cell>
+      <Cell>
+        <K>case</K>
+        <V>{selectedCaseId.toUpperCase()}</V>
+      </Cell>
+      <Cell>
+        <K>tiles</K>
+        <V>{tilesValue}</V>
+      </Cell>
+      <Cell>
+        <K>last run</K>
+        <V>{lastRun}</V>
+      </Cell>
+      <div />
+      <div className="flex items-center gap-3 border-l border-[var(--line)] px-5">
+        <K>S_orbit</K>
         <span
-          className="numeric text-[16px] leading-none text-[var(--ink)]"
-          style={{ letterSpacing: "-0.02em" }}
+          className="numeric text-[15px] leading-none text-[var(--phos)]"
+          style={{ letterSpacing: "-0.03em" }}
         >
           {orbitValue}
         </span>
-        <span
-          className="tabular-nums text-[10px] text-[var(--ink-mute)]"
-          style={{ fontFamily: "var(--font-mono)" }}
-        >
+        <span className="mono text-[10px] tabular-nums text-[var(--fg-faint)]">
           / 1.000
         </span>
       </div>
@@ -78,30 +86,22 @@ export function StatusBar() {
   );
 }
 
-function Item({ children }: { children: React.ReactNode }) {
+function Cell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-2 border-r border-[var(--ink-rule)] px-4">
+    <div className="flex items-center gap-2 border-r border-[var(--line)] px-4">
       {children}
     </div>
   );
 }
-function Key({ children }: { children: React.ReactNode }) {
+function K({ children }: { children: React.ReactNode }) {
   return (
-    <span
-      className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-faint)]"
-      style={{ fontFamily: "var(--font-mono)" }}
-    >
+    <span className="mono text-[10px] uppercase tracking-[0.16em] text-[var(--fg-faint)]">
       {children}
     </span>
   );
 }
-function Val({ children }: { children: React.ReactNode }) {
+function V({ children }: { children: React.ReactNode }) {
   return (
-    <span
-      className="tabular-nums text-[var(--ink)]"
-      style={{ fontFamily: "var(--font-mono)" }}
-    >
-      {children}
-    </span>
+    <span className="mono tabular-nums text-[var(--fg)]">{children}</span>
   );
 }

@@ -1,389 +1,344 @@
 @import "tailwindcss";
 
 /* ============================================================
-   MISSION CONTROL · 1968
-   A printed engineering-journal aesthetic for an orbital console.
-   Cream paper, deep navy ink, NASA worm-orange as the only signal.
-   No dark mode. No gradients. No glows. Sharp rules. Oldstyle figures.
+   chunkyweb — Subterranean Lab
+   ----------------------------------------------------------
+   Dark slate canvas. Chartreuse phosphor as the only bright
+   signal. Coral for warnings, sky-blue for info, sage for go.
+   No gradients-on-white. No glassmorphism. No drop shadows.
+   Hairlines, monospace coordinates, dense tabular data.
 
-   Performance principles preserved from earlier iterations:
-   - Solid background-color only (NO fixed-attachment, NO blend modes,
-     NO infinite background animations, NO SVG noise tiles).
-   - At most one cheap CSS-gradient layer for paper grain.
-   - Motion is single-fire, GPU-only transforms, opt-out via reduced-motion.
+   Performance rules (carried from prior iterations):
+   - One static dot-grid layer on body. No fixed-attached.
+   - No infinite background animations.
+   - Motion is opt-in and respects reduced-motion.
    ============================================================ */
 
 :root {
-  /* Paper & ink */
-  --paper:        #f3ebd9;   /* warm cream, slight yellow shift */
-  --paper-edge:   #ebe1cb;   /* deeper card surface */
-  --paper-deep:   #e3d7bb;   /* sunken / inset surface */
-  --paper-onion:  #f8f3e3;   /* lifted / hover surface */
-  --paper-margin: #ddd0b0;   /* page margin tone */
+  /* Slate canvas */
+  --bg:           #0c0e14;   /* deepest — page bg */
+  --bg-soft:      #11141c;   /* card surface */
+  --bg-lift:      #181c27;   /* elevated / hover */
+  --bg-sunk:      #07080c;   /* recessed (input bg) */
 
-  /* Ink scale — deep navy, near-black */
-  --ink:          #161a2c;
-  --ink-soft:     #2c3247;
-  --ink-mute:     #5a607a;
-  --ink-faint:    #8c8a78;
-  --ink-rule:     #2c3247;
-  --ink-thread:   #c8bd9c;   /* hairline / dotted rules */
+  /* Hairlines */
+  --line:         #1f2330;   /* default 1px rule */
+  --line-bright:  #2c3243;   /* hover / active */
+  --line-loud:    #3a4159;   /* selected */
 
-  /* Single signal — NASA worm orange */
-  --signal:       #d94c1f;
-  --signal-deep:  #a8350f;
-  --signal-soft:  rgba(217, 76, 31, 0.10);
-  --signal-thread:rgba(217, 76, 31, 0.30);
+  /* Type */
+  --fg:           #e8eaf2;   /* primary */
+  --fg-mute:      #9aa1bb;   /* secondary */
+  --fg-faint:     #5d6483;   /* tertiary */
+  --fg-ghost:     #3d435c;   /* placeholder */
 
-  /* Secondary signals — restrained */
-  --go:           #2f6f4f;   /* deep telegraph green for "go" */
-  --go-soft:      rgba(47, 111, 79, 0.10);
-  --hold:         #b6892c;   /* burnt amber, used very sparingly */
-  --hold-soft:    rgba(182, 137, 44, 0.12);
+  /* Phosphor — chartreuse, the one bright signal */
+  --phos:         #d8f76b;   /* primary phosphor */
+  --phos-deep:    #b7d144;
+  --phos-soft:    rgba(216, 247, 107, 0.14);
+  --phos-line:    rgba(216, 247, 107, 0.32);
 
-  /* Map colors — restrained, paper-friendly */
-  --aoi-stroke:   #d94c1f;
-  --aoi-fill:     rgba(217, 76, 31, 0.06);
-  --footprint-valid:   rgba(47, 111, 79, 0.20);
-  --footprint-invalid: rgba(217, 76, 31, 0.16);
-  --orbit-track:  #2c3247;
-  --sat-marker:   #d94c1f;
+  /* Status palette */
+  --warn:         #ff8a5c;   /* warm coral */
+  --warn-soft:    rgba(255, 138, 92, 0.14);
+  --danger:       #ff5f7e;   /* hot pink-coral, distinctive */
+  --danger-soft:  rgba(255, 95, 126, 0.14);
+  --info:         #7cd5ff;   /* sky cyan */
+  --info-soft:    rgba(124, 213, 255, 0.14);
+  --go:           #79e0a3;   /* sage mint */
+  --go-soft:      rgba(121, 224, 163, 0.14);
 
-  /* Geometry — sharp, printed */
+  /* Map / tile semantic */
+  --tile-imaged:        #79e0a3;
+  --tile-skipped-sat:   #ff8a5c;
+  --tile-skipped-time:  #5d6483;
+  --tile-unreachable:   #ff5f7e;
+  --tile-pending:       #2c3243;
+
+  /* Geometry */
   --rule-thin: 1px;
   --rule-bold: 2px;
-  --radius-tight: 2px;
 
-  /* Typography */
-  --font-display-stack: var(--font-display), "Newsreader", "Source Serif 4", "PT Serif", Georgia, serif;
-  --font-serif-stack:   var(--font-serif), "Source Serif 4", "PT Serif", "Iowan Old Style", Georgia, serif;
-  --font-mono-stack:    var(--font-mono), "IBM Plex Mono", "JetBrains Mono", ui-monospace, monospace;
+  /* Type stacks */
+  --font-display-stack: var(--font-display), "Funnel Display", "Familjen Grotesk", system-ui, sans-serif;
+  --font-sans-stack:    var(--font-sans), "Funnel Sans", "Familjen Grotesk", -apple-system, system-ui, sans-serif;
+  --font-mono-stack:    var(--font-mono), "JetBrains Mono", "IBM Plex Mono", ui-monospace, monospace;
 }
 
-/* Tailwind v4 theme tokens */
 @theme inline {
-  --color-paper:        var(--paper);
-  --color-paper-edge:   var(--paper-edge);
-  --color-paper-deep:   var(--paper-deep);
-  --color-paper-onion:  var(--paper-onion);
-  --color-paper-margin: var(--paper-margin);
-
-  --color-ink:        var(--ink);
-  --color-ink-soft:   var(--ink-soft);
-  --color-ink-mute:   var(--ink-mute);
-  --color-ink-faint:  var(--ink-faint);
-  --color-ink-rule:   var(--ink-rule);
-  --color-ink-thread: var(--ink-thread);
-
-  --color-signal:     var(--signal);
-  --color-signal-deep:var(--signal-deep);
-  --color-go:         var(--go);
-  --color-hold:       var(--hold);
+  --color-bg:          var(--bg);
+  --color-bg-soft:     var(--bg-soft);
+  --color-bg-lift:     var(--bg-lift);
+  --color-bg-sunk:     var(--bg-sunk);
+  --color-line:        var(--line);
+  --color-line-bright: var(--line-bright);
+  --color-line-loud:   var(--line-loud);
+  --color-fg:          var(--fg);
+  --color-fg-mute:     var(--fg-mute);
+  --color-fg-faint:    var(--fg-faint);
+  --color-fg-ghost:    var(--fg-ghost);
+  --color-phos:        var(--phos);
+  --color-phos-deep:   var(--phos-deep);
+  --color-warn:        var(--warn);
+  --color-danger:      var(--danger);
+  --color-info:        var(--info);
+  --color-go:          var(--go);
 
   --font-display: var(--font-display-stack);
-  --font-serif:   var(--font-serif-stack);
+  --font-sans:    var(--font-sans-stack);
   --font-mono:    var(--font-mono-stack);
 }
 
 /* ============================================================
-   Base — paper with a single subtle dotted-grid layer
+   Base
    ============================================================ */
 
 html, body {
-  background-color: var(--paper);
-  color: var(--ink);
-  font-family: var(--font-serif-stack);
-  font-feature-settings: "onum" 1, "lnum" 0, "kern" 1, "liga" 1;
+  background-color: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans-stack);
+  font-feature-settings: "kern" 1, "liga" 1, "ss01" 1;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
-/* Paper "grain" — a single static radial-dot pattern on the body.
-   Pure CSS, NOT fixed-attached, NOT animated, very cheap to paint. */
+/* Single static dot-grid — cheap to paint, gives subtle depth.
+   Pinned to the body, no fixed-attachment. */
 body {
   background-image:
-    radial-gradient(circle at 50% 50%, rgba(22, 26, 44, 0.06) 0.5px, transparent 0.6px);
-  background-size: 18px 18px;
-  background-position: 0 0;
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.025) 0.5px, transparent 0.6px);
+  background-size: 22px 22px;
 }
 
 ::selection {
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--phos);
+  color: var(--bg);
 }
 
-/* Scrollbars — flat, paper-toned */
-::-webkit-scrollbar { width: 12px; height: 12px; }
-::-webkit-scrollbar-track {
-  background: var(--paper-deep);
-  border-left: 1px solid var(--paper-margin);
-}
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb {
-  background: var(--ink-mute);
-  border: 3px solid var(--paper-deep);
+  background: var(--line-bright);
+  border-radius: 0;
 }
-::-webkit-scrollbar-thumb:hover { background: var(--ink-soft); }
+::-webkit-scrollbar-thumb:hover { background: var(--line-loud); }
 
 /* ============================================================
-   Typography utilities
+   Type utilities
    ============================================================ */
 
 .display {
   font-family: var(--font-display-stack);
-  font-weight: 500;
-  letter-spacing: -0.018em;
+  font-weight: 700;
+  letter-spacing: -0.022em;
 }
-.display-italic {
+.display-tight {
   font-family: var(--font-display-stack);
-  font-style: italic;
-  font-weight: 400;
-  letter-spacing: -0.005em;
-}
-.serif {
-  font-family: var(--font-serif-stack);
-}
-.serif-italic {
-  font-family: var(--font-serif-stack);
-  font-style: italic;
+  font-weight: 800;
+  letter-spacing: -0.035em;
 }
 .numeric {
   font-family: var(--font-display-stack);
-  font-weight: 500;
-  font-variant-numeric: lining-nums tabular-nums;
-  font-feature-settings: "lnum" 1, "tnum" 1;
-  letter-spacing: -0.025em;
-}
-.tabular {
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "ss01" 1;
+  letter-spacing: -0.04em;
+}
+.mono {
+  font-family: var(--font-mono-stack);
+  font-feature-settings: "tnum" 1;
 }
 
-/* "FIG 01 —" style printed caption */
-.figcap {
+/* eyebrow — short caps mono label */
+.eyebrow {
   font-family: var(--font-mono-stack);
   font-size: 10px;
   font-weight: 500;
-  letter-spacing: 0.24em;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: var(--ink-mute);
+  color: var(--fg-faint);
 }
-/* small italic print sub-caption */
-.subcap {
-  font-family: var(--font-display-stack);
-  font-style: italic;
-  font-weight: 400;
-  font-size: 13px;
-  color: var(--ink-soft);
-  letter-spacing: 0.005em;
-}
-/* mono micro-label — printed legend keys */
-.mono-key {
+/* tiny key */
+.kbd {
   font-family: var(--font-mono-stack);
   font-size: 10px;
   font-weight: 500;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--ink-mute);
-}
-/* page number / running-head ornament */
-.pagemark {
-  font-family: var(--font-display-stack);
-  font-style: italic;
-  font-size: 11px;
-  letter-spacing: 0.05em;
-  color: var(--ink-faint);
+  color: var(--fg-mute);
 }
 
 /* ============================================================
-   Surfaces — printed cards, no shadows, sharp ink rules
+   Surfaces
    ============================================================ */
 
-.sheet {
-  background: var(--paper-edge);
-  border: var(--rule-thin) solid var(--ink-rule);
-  border-radius: var(--radius-tight);
+.module {
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+  border-radius: 4px;
   position: relative;
 }
-.sheet-bold {
-  background: var(--paper-edge);
-  border: var(--rule-bold) solid var(--ink-rule);
-  border-radius: var(--radius-tight);
-  position: relative;
-}
-.sheet-inset {
-  background: var(--paper-deep);
-  border: var(--rule-thin) solid var(--paper-margin);
-  border-radius: var(--radius-tight);
-}
 
-/* Optional decorative double-rule (printed-journal feel) */
-.double-rule-b {
-  box-shadow: inset 0 -3px 0 var(--paper-edge), inset 0 -4px 0 var(--ink-rule);
-}
-
-/* Hairline horizontal rule used as section divider */
-.hr-thin {
-  height: 1px;
-  background: var(--ink-rule);
-  border: 0;
-}
-.hr-double {
-  height: 4px;
-  background:
-    linear-gradient(var(--ink-rule), var(--ink-rule)) top / 100% 1px no-repeat,
-    linear-gradient(var(--ink-rule), var(--ink-rule)) bottom / 100% 1px no-repeat;
-  border: 0;
-}
-
-/* Decorative left margin tick (looks like a printed margin guide) */
-.margin-tick {
-  position: relative;
-}
-.margin-tick::before {
+/* Phosphor edge — a 1px line at the top of a module that hints
+   the panel is "live". No glow, no animation; just a hairline. */
+.module-live::before {
   content: "";
   position: absolute;
-  left: -16px;
-  top: 0.45em;
-  width: 8px;
+  inset: 0 12px auto 12px;
   height: 1px;
-  background: var(--ink-rule);
+  background: var(--phos-line);
+  pointer-events: none;
 }
 
+/* Active module — the same edge but full-bleed and brighter. */
+.module-on {
+  border-color: var(--line-bright);
+}
+.module-on::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  background: var(--phos);
+  pointer-events: none;
+}
+
+/* "Coordinate" header inside a module: tiny cross marks at corners */
+.coord::before, .coord::after {
+  content: "";
+  position: absolute;
+  width: 8px; height: 8px;
+  border-color: var(--line-loud);
+  border-style: solid;
+  border-width: 0;
+}
+.coord::before { top: 0; left: 0; border-top-width: 1px; border-left-width: 1px; }
+.coord::after  { bottom: 0; right: 0; border-bottom-width: 1px; border-right-width: 1px; }
+
 /* ============================================================
-   Form elements — sliders, inputs
+   Form controls — sliders, inputs
    ============================================================ */
 
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
-  height: 1px;
-  background: var(--ink-rule);
-  outline: none;
+  height: 24px;
+  background: transparent;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 2px;
+  background: var(--line-bright);
+}
+input[type="range"]::-moz-range-track {
+  height: 2px;
+  background: var(--line-bright);
 }
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
-  appearance: none;
   width: 14px;
   height: 14px;
-  background: var(--paper);
-  border: 2px solid var(--ink);
-  border-radius: 50%;
-  cursor: pointer;
-  transition: transform 0.18s cubic-bezier(.2,.7,.2,1), background-color 0.18s;
-}
-input[type="range"]::-webkit-slider-thumb:hover {
-  transform: scale(1.2);
-  background: var(--signal);
-  border-color: var(--signal-deep);
+  margin-top: -6px;
+  background: var(--phos);
+  border: none;
+  border-radius: 0;
+  box-shadow: 0 0 0 1px var(--bg);
 }
 input[type="range"]::-moz-range-thumb {
   width: 14px;
   height: 14px;
-  background: var(--paper);
-  border: 2px solid var(--ink);
-  border-radius: 50%;
-  cursor: pointer;
+  background: var(--phos);
+  border: none;
+  border-radius: 0;
+  box-shadow: 0 0 0 1px var(--bg);
+}
+input[type="range"]:focus { outline: none; }
+input[type="range"]:focus::-webkit-slider-thumb {
+  box-shadow: 0 0 0 1px var(--bg), 0 0 0 3px var(--phos-soft);
 }
 
 /* ============================================================
-   Map (Leaflet) — paper-friendly
+   Map (Leaflet) overrides — dark surface, hairline borders
    ============================================================ */
 
 .leaflet-container {
-  background: var(--paper-deep) !important;
-  font-family: var(--font-mono-stack);
+  background: var(--bg-sunk);
+  font-family: var(--font-sans-stack);
 }
-.leaflet-popup-content-wrapper,
-.leaflet-popup-tip {
-  background: var(--paper) !important;
-  color: var(--ink) !important;
-  border: 1px solid var(--ink-rule) !important;
-  border-radius: var(--radius-tight) !important;
-  box-shadow: none !important;
+.leaflet-tile-pane { filter: none; }
+.leaflet-control-attribution {
+  background: var(--bg-soft) !important;
+  color: var(--fg-faint) !important;
+  border: 1px solid var(--line);
+  border-bottom: none;
+  border-right: none;
   font-family: var(--font-mono-stack);
+  font-size: 9px !important;
+  letter-spacing: 0.04em;
+}
+.leaflet-control-attribution a { color: var(--fg-mute) !important; }
+.leaflet-control-zoom {
+  border: 1px solid var(--line) !important;
+  background: var(--bg-soft) !important;
+}
+.leaflet-control-zoom a {
+  background: var(--bg-soft) !important;
+  color: var(--fg-mute) !important;
+  border-color: var(--line) !important;
+  font-family: var(--font-display-stack) !important;
+}
+.leaflet-control-zoom a:hover {
+  background: var(--bg-lift) !important;
+  color: var(--phos) !important;
+}
+.leaflet-popup-content-wrapper, .leaflet-popup-tip {
+  background: var(--bg-lift) !important;
+  color: var(--fg) !important;
+  border: 1px solid var(--line-bright);
+  border-radius: 0 !important;
+  box-shadow: none !important;
 }
 .leaflet-popup-content {
+  margin: 8px 12px !important;
   font-family: var(--font-mono-stack);
   font-size: 11px;
 }
-.leaflet-control-attribution {
-  background: var(--paper) !important;
-  color: var(--ink-mute) !important;
-  font-size: 9px !important;
-  letter-spacing: 0.04em;
-  border: 1px solid var(--paper-margin) !important;
+.leaflet-tooltip {
+  background: var(--bg-lift) !important;
+  color: var(--fg) !important;
+  border: 1px solid var(--line-bright) !important;
   border-radius: 0 !important;
-}
-.leaflet-control-attribution a { color: var(--ink-soft) !important; }
-.leaflet-control-zoom a {
-  background: var(--paper) !important;
-  color: var(--ink) !important;
-  border: 1px solid var(--ink-rule) !important;
-  border-radius: 0 !important;
-  font-family: var(--font-mono-stack);
-  font-weight: 500;
-}
-.leaflet-control-zoom a:hover {
-  background: var(--paper-onion) !important;
-  color: var(--signal) !important;
-}
-
-/* Recharts polish — paper palette */
-.recharts-cartesian-grid line {
-  stroke: var(--ink-thread);
-  stroke-dasharray: 1 3;
-}
-.recharts-cartesian-axis-line { stroke: var(--ink-rule); }
-.recharts-default-tooltip {
-  background: var(--paper) !important;
-  border: 1px solid var(--ink-rule) !important;
-  border-radius: var(--radius-tight) !important;
   box-shadow: none !important;
-  color: var(--ink) !important;
-  font-family: var(--font-mono-stack) !important;
+  font-family: var(--font-mono-stack);
+  font-size: 10px;
+  padding: 3px 6px !important;
+}
+.leaflet-tooltip-top:before, .leaflet-tooltip-bottom:before,
+.leaflet-tooltip-left:before, .leaflet-tooltip-right:before {
+  display: none;
 }
 
 /* ============================================================
-   Motion — one-shot entrance, calm pulse, hover lift
+   Motion
    ============================================================ */
 
-@keyframes ink-rise {
-  from { opacity: 0; transform: translateY(4px); }
-  to   { opacity: 1; transform: translateY(0); }
+@keyframes pulse-phos {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.45; }
 }
-.ink-rise   { animation: ink-rise 0.55s cubic-bezier(.2,.7,.2,1) both; }
-.ink-rise-1 { animation: ink-rise 0.55s cubic-bezier(.2,.7,.2,1) 0.05s both; }
-.ink-rise-2 { animation: ink-rise 0.55s cubic-bezier(.2,.7,.2,1) 0.13s both; }
-.ink-rise-3 { animation: ink-rise 0.55s cubic-bezier(.2,.7,.2,1) 0.21s both; }
-.ink-rise-4 { animation: ink-rise 0.55s cubic-bezier(.2,.7,.2,1) 0.29s both; }
+.pulse-phos { animation: pulse-phos 1.6s ease-in-out infinite; }
 
-/* Cursor / signal blink — used ONLY on a single element */
-@keyframes blink-signal {
-  0%, 60% { opacity: 1; }
-  61%, 100% { opacity: 0.25; }
+@keyframes scan-sweep {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
-.blink-signal { animation: blink-signal 1.6s steps(1, end) infinite; }
-
-@keyframes hairline-sweep {
-  from { transform: scaleX(0); }
-  to   { transform: scaleX(1); }
-}
-.hairline-sweep {
-  transform-origin: left;
-  animation: hairline-sweep 0.8s cubic-bezier(.2,.7,.2,1) both;
-}
-
-.lift {
-  transition: transform 0.18s cubic-bezier(.2,.7,.2,1),
-              border-color 0.18s,
-              background-color 0.18s,
-              color 0.18s;
-}
-.lift:hover { transform: translateY(-1px); }
+.scan-sweep { animation: scan-sweep 2.4s linear infinite; }
 
 @media (prefers-reduced-motion: reduce) {
-  .ink-rise, .ink-rise-1, .ink-rise-2, .ink-rise-3, .ink-rise-4,
-  .blink-signal, .hairline-sweep, .lift {
+  .pulse-phos, .scan-sweep {
     animation: none !important;
-    transition: none !important;
+  }
+  *, *::before, *::after {
+    transition-duration: 0.01ms !important;
   }
 }

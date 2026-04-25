@@ -9,62 +9,65 @@ export function StrategyPicker() {
   const setStrategy = useAppStore((s) => s.setStrategy);
 
   return (
-    <ul className="flex flex-col">
+    <div className="grid grid-cols-1 gap-2">
       {STRATEGIES.map((s, i) => {
         const active = strategy === s.id;
         return (
-          <li key={s.id}>
-            <button
-              type="button"
-              onClick={() => setStrategy(s.id)}
+          <button
+            key={s.id}
+            type="button"
+            onClick={() => setStrategy(s.id)}
+            aria-pressed={active}
+            className={cn(
+              "group flex items-start gap-3 border px-3.5 py-3 text-left transition-colors",
+              active
+                ? "border-[var(--phos)] bg-[var(--phos-soft)]"
+                : "border-[var(--line)] bg-[var(--bg-sunk)] hover:border-[var(--line-bright)] hover:bg-[var(--bg-lift)]"
+            )}
+            style={{ borderRadius: 2 }}
+          >
+            <span
               className={cn(
-                "lift group flex w-full items-start gap-4 border-t border-[var(--ink-rule)] py-3.5 text-left transition-colors",
-                i === STRATEGIES.length - 1 && "border-b",
+                "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center border transition-colors",
                 active
-                  ? "text-[var(--ink)]"
-                  : "text-[var(--ink-soft)] hover:text-[var(--ink)]"
+                  ? "border-[var(--phos)] bg-[var(--phos)]"
+                  : "border-[var(--line-bright)] bg-transparent group-hover:border-[var(--fg-mute)]"
               )}
             >
-              {/* Index marker — switches to filled square when active */}
-              <span
-                className={cn(
-                  "mt-1 flex h-3.5 w-3.5 shrink-0 items-center justify-center border transition-colors",
-                  active
-                    ? "border-[var(--ink)] bg-[var(--ink)]"
-                    : "border-[var(--ink-soft)] bg-transparent group-hover:border-[var(--ink)]"
-                )}
-              >
-                {active && (
-                  <span
-                    className="block h-1.5 w-1.5 bg-[var(--signal)]"
-                    aria-hidden
-                  />
-                )}
-              </span>
-
-              <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <div className="flex items-baseline justify-between gap-2">
-                  <span
-                    className="display text-[18px] leading-tight"
-                    style={{ letterSpacing: "-0.012em" }}
-                  >
-                    {s.label}
-                  </span>
-                  <span
-                    className="text-[10px] tabular-nums text-[var(--ink-faint)]"
-                    style={{ fontFamily: "var(--font-mono)" }}
-                  >
-                    METHOD {String(i + 1).padStart(2, "0")}
-                  </span>
-                </div>
-                <span className="display-italic text-[13px] leading-snug text-[var(--ink-mute)]">
-                  {s.hint}
+              {active && (
+                <span
+                  className="block h-1.5 w-1.5"
+                  style={{ background: "var(--bg)" }}
+                  aria-hidden
+                />
+              )}
+            </span>
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <div className="flex items-baseline justify-between gap-2">
+                <span
+                  className={cn(
+                    "display text-[14px]",
+                    active ? "text-[var(--fg)]" : "text-[var(--fg)]"
+                  )}
+                >
+                  {s.label}
+                </span>
+                <span
+                  className="kbd tabular-nums"
+                  style={{
+                    color: active ? "var(--phos)" : "var(--fg-faint)",
+                  }}
+                >
+                  {String(i + 1).padStart(2, "0")}
                 </span>
               </div>
-            </button>
-          </li>
+              <span className="text-[12px] leading-snug text-[var(--fg-mute)]">
+                {s.hint}
+              </span>
+            </div>
+          </button>
         );
       })}
-    </ul>
+    </div>
   );
 }

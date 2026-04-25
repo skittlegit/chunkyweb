@@ -16,22 +16,23 @@ export const WHEEL_MARGIN_MNMS = 24;
 
 export const AOI_CENTER: [number, number] = [37.5, -122.0];
 export const DEFAULT_MAP_ZOOM = 6;
-// Light/paper-friendly Stamen "toner-lite" via stadia maps mirror
+
+// CartoCDN dark-matter tiles — pairs naturally with slate UI
 export const DARK_TILE_URL =
-  "https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png";
+  "https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png";
 export const DARK_TILE_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; CARTO';
 
 // ============================================================
-// Palette — Mission Control 1968
+// Palette — Subterranean Lab
 // ============================================================
 
 export const TILE_STATUS_COLOR: Record<TileStatus, string> = {
-  imaged: "#2f6f4f",            // go green
-  skipped_saturation: "#b6892c", // hold amber
-  skipped_time: "#5a607a",      // ink-mute
-  unreachable: "#d94c1f",       // worm orange
-  pending: "#ddd0b0",           // paper margin
+  imaged:             "#79e0a3", // sage go
+  skipped_saturation: "#ff8a5c", // coral warn
+  skipped_time:       "#5d6483", // muted
+  unreachable:        "#ff5f7e", // hot pink danger
+  pending:            "#3a4159", // line-loud
 };
 
 export const TILE_STATUS_LABEL: Record<TileStatus, string> = {
@@ -42,18 +43,17 @@ export const TILE_STATUS_LABEL: Record<TileStatus, string> = {
   pending: "Pending",
 };
 
-// Wheels — printed plate colors: ink, signal, hold, go
 export const WHEEL_COLORS: [string, string, string, string] = [
-  "#161a2c",
-  "#d94c1f",
-  "#b6892c",
-  "#2f6f4f",
+  "#d8f76b", // phosphor
+  "#ff8a5c",
+  "#7cd5ff",
+  "#79e0a3",
 ];
 
 export const DIFFICULTY_COLOR: Record<"easy" | "moderate" | "hard", string> = {
-  easy: "#2f6f4f",
-  moderate: "#b6892c",
-  hard: "#d94c1f",
+  easy:     "#79e0a3",
+  moderate: "#ff8a5c",
+  hard:     "#ff5f7e",
 };
 
 export const DIFFICULTY_LABEL: Record<"easy" | "moderate" | "hard", string> = {
@@ -66,7 +66,13 @@ export const DIFFICULTY_LABEL: Record<"easy" | "moderate" | "hard", string> = {
 // Strategies
 // ============================================================
 
-export const STRATEGIES: { id: Strategy; label: string; hint: string }[] = [
+interface StrategyDef {
+  id: Strategy;
+  label: string;
+  hint: string;
+}
+
+export const STRATEGIES: StrategyDef[] = [
   {
     id: "boustrophedon",
     label: "Boustrophedon",
@@ -83,9 +89,3 @@ export const STRATEGIES: { id: Strategy; label: string; hint: string }[] = [
     hint: "Locks the centroid first, then expands outward.",
   },
 ];
-
-export const STRATEGY_LABEL: Record<Strategy, string> = {
-  boustrophedon: "Boustrophedon",
-  greedy: "Greedy",
-  center_first: "Center-First",
-};

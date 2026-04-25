@@ -1,12 +1,28 @@
+import { cn } from "@/lib/cn";
+
 interface LoadingStateProps {
   message?: string;
+  className?: string;
 }
 
-export function LoadingState({ message = "Loading…" }: LoadingStateProps) {
+export function LoadingState({
+  message = "Listening…",
+  className,
+}: LoadingStateProps) {
   return (
-    <div className="flex h-full w-full flex-col items-center justify-center gap-3 px-6 py-10 text-center">
-      <span className="figcap">{message}</span>
-      <div className="h-px w-24 origin-left bg-[var(--ink-rule)] hairline-sweep" />
+    <div
+      className={cn(
+        "flex h-full w-full flex-col items-center justify-center gap-3 text-[var(--fg-mute)]",
+        className
+      )}
+    >
+      <div className="relative h-[1px] w-32 overflow-hidden bg-[var(--line)]">
+        <span
+          aria-hidden
+          className="absolute inset-y-0 w-1/3 bg-[var(--phos)] scan-sweep"
+        />
+      </div>
+      <span className="kbd">{message}</span>
     </div>
   );
 }

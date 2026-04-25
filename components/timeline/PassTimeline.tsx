@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import {
   ComposedChart,
   Line,
@@ -12,6 +12,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { Pause, Play } from "lucide-react";
 import { useEphemeris } from "@/hooks/useEphemeris";
 import { useAppStore } from "@/store/useAppStore";
 import { useTimelineStore } from "@/store/useTimelineStore";
@@ -20,84 +21,197 @@ import {
   OFF_NADIR_LIMIT_DEG,
   PASS_DURATION_S,
 } from "@/lib/constants";
-import { Pause, Play } from "lucide-react";
 import { cn } from "@/lib/cn";
 
-// Hex literals — Recharts pipes these straight into SVG attributes; some
-// older browsers (and older Recharts versions) stumble on css `var()`.
-const INK = "#161a2c";
-const INK_RULE = "#cfc6ad";
-const INK_MUTE = "#5a607a";
-const INK_FAINT = "#8c8a78";
-const SIGNAL = "#d94c1f";
-const PAPER = "#f3ebd9";
+// Hex literals — Recharts pipes these into SVG attrs, CSS vars don't resolve.
+const FG = "#e8eaf2";
+const FG_MUTE = "#9aa1bb";
+const FG_FAINT = "#5d6483";
+const LINE = "#1f2330";
+const LINE_BRIGHT = "#2c3243";
+const PHOS = "#d8f76b";
+const WARN = "#ff8a5c";
+const DANGER = "#ff5f7e";
+const BG_LIFT = "#181c27";
 
 const TOOLTIP_STYLE: React.CSSProperties = {
-  backgroundColor: PAPER,
-  border: `1px solid ${INK}`,
+  backgroundColor: BG_LIFT,
+  border: `1px solid ${LINE_BRIGHT}`,
   borderRadius: 0,
-  color: INK,
+  color: FG,
   fontFamily: "var(--font-mono)",
   fontSize: 11,
   padding: "6px 9px",
   boxShadow: "none",
 };
-
 const AXIS = {
-  tick: {
-    fill: INK_MUTE,
-    fontSize: 10,
-    fontFamily: "var(--font-mono)",
-  },
-  axisLine: { stroke: INK_RULE },
-  tickLine: { stroke: INK_RULE },
+  tick: { fill: FG_FAINT, fontSize: 10, fontFamily: "var(--font-mono)" },
+  axisLine: { stroke: LINE_BRIGHT },
+  tickLine: { stroke: LINE_BRIGHT },
 };
 
-export function PassTimeline() {
-  const selectedCaseId = useAppStore((s) => s.selectedCaseId);
-  const result = useAppStore((s) => s.results[selectedCaseId]);
-  const { data: ephemeris } = useEphemeris(selectedCaseId);
+/* --------------------------------------------------------------
+   Isolated subscribers — these are the ONLY components that read
+   currentTime/isPlaying. The parent PassTimeline never re-renders
+   during playback, which keeps Recharts/Leaflet stable.
+   -------------------------------------------------------------- */
 
-  const currentTime = useTimelineStore((s) => s.currentTime);
-  const setTime = useTimelineStore((s) => s.setTime);
+function TimeReadout() {
+  const t = useTimelineStore((s) => s.currentTime);
+  return (
+    <div className="flex items-baseline gap-1.5">
+      <span
+        className="numeric leading-none text-[var(--phos)] tabular-nums"
+        style={{ fontSize: 26 }}
+      >
+        {t.toFixed(1)}
+      </span>
+      <span className="mono text-[10px] uppercase tracking-[0.16em] text-[var(--fg-faint)]">
+        s / {PASS_DURATION_S}
+      </span>
+    </div>
+  );
+}
+
+function PlayPauseButton() {
   const isPlaying = useTimelineStore((s) => s.isPlaying);
   const togglePlay = useTimelineStore((s) => s.togglePlay);
-  const playbackSpeed = useTimelineStore((s) => s.playbackSpeed);
-  const setSpeed = useTimelineStore((s) => s.setSpeed);
+  return (
+    <button
+      type="button"
+      onClick={togglePlay}
+      aria-label={isPlaying ? "Pause" : "Play"}
+      className="group flex h-8 w-8 items-center justify-center border border-[var(--phos)] bg-transparent text-[var(--phos)] transition-colors hover:bg-[var(--phos)] hover:text-[var(--bg)]"
+      style={{ borderRadius: 2 }}
+    >
+      {isPlaying ? (
+        <Pause size={11} fill="currentColor" />
+      ) : (
+        <Play size={11} fill="currentColor" className="ml-[1px]" />
+      )}
+    </button>
+  );
+}
 
-  // Animate playback (RAF only when playing; throttled to ~30fps)
+function SpeedPicker() {
+  const speed = useTimelineStore((s) => s.playbackSpeed);
+  const setSpeed = useTimelineStore((s) => s.setSpeed);
+  const speeds = [10, 50, 100];
+  return (
+    <div
+      className="flex items-stretch border border-[var(--line-bright)]"
+      style={{ borderRadius: 2 }}
+    >
+      {speeds.map((s, i) => (
+        <button
+          key={s}
+          onClick={() => setSpeed(s)}
+          className={cn(
+            "mono px-2.5 text-[10px] tabular-nums uppercase tracking-[0.18em] transition-colors",
+            i > 0 && "border-l border-[var(--line-bright)]",
+            speed === s
+              ? "bg-[var(--phos)] text-[var(--bg)]"
+              : "bg-transparent text-[var(--fg-mute)] hover:text-[var(--fg)]"
+          )}
+        >
+          {s}×
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function TimeScrubber() {
+  const t = useTimelineStore((s) => s.currentTime);
+  const setTime = useTimelineStore((s) => s.setTime);
+  return (
+    <input
+      type="range"
+      min={0}
+      max={PASS_DURATION_S}
+      step={0.5}
+      value={t}
+      onChange={(e) => setTime(parseFloat(e.target.value))}
+      className="w-full max-w-md flex-1"
+    />
+  );
+}
+
+/* CSS-only cursor overlay — positioned absolutely on top of the
+   chart's plot area. Subscribes to currentTime, BUT only updates
+   its own transform; the underlying SVG chart is never touched. */
+function CursorOverlay() {
+  const t = useTimelineStore((s) => s.currentTime);
+  const pct = Math.max(0, Math.min(1, t / PASS_DURATION_S));
+  // Plot area is approximately inset 8px left, 12px right (matches chart margins).
+  return (
+    <div
+      aria-hidden
+      className="pointer-events-none absolute"
+      style={{
+        top: 6,
+        bottom: 18,
+        left: `calc(40px + ${pct} * (100% - 52px))`,
+      }}
+    >
+      <span className="block h-full w-px bg-[var(--phos)] opacity-80" />
+      <span className="absolute -top-[3px] left-[-2px] block h-1.5 w-1.5 bg-[var(--phos)]" />
+    </div>
+  );
+}
+
+/* --------------------------------------------------------------
+   Playback engine — RAF, throttled. Lives in its own subscriber so
+   that turning playback on/off doesn't re-render the whole panel.
+   -------------------------------------------------------------- */
+
+function PlaybackEngine() {
+  const isPlaying = useTimelineStore((s) => s.isPlaying);
+  const playbackSpeed = useTimelineStore((s) => s.playbackSpeed);
   const rafRef = useRef<number | null>(null);
-  const lastRef = useRef<number>(0);
   const lastTickRef = useRef<number>(0);
+
   useEffect(() => {
     if (!isPlaying) {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
       return;
     }
-    lastRef.current = performance.now();
-    lastTickRef.current = lastRef.current;
+    lastTickRef.current = performance.now();
+    const TICK_MS = 66; // ~15 Hz — gentle on Leaflet/Recharts redraws
     const step = (now: number) => {
-      const dt = (now - lastRef.current) / 1000;
-      lastRef.current = now;
-      if (now - lastTickRef.current >= 33) {
+      const dt = (now - lastTickRef.current) / 1000;
+      if (dt * 1000 >= TICK_MS) {
         lastTickRef.current = now;
-        const next =
-          useTimelineStore.getState().currentTime + dt * playbackSpeed;
+        const state = useTimelineStore.getState();
+        const next = state.currentTime + dt * playbackSpeed;
         if (next >= PASS_DURATION_S) {
-          useTimelineStore.getState().setTime(PASS_DURATION_S);
-          useTimelineStore.getState().pause();
+          state.setTime(PASS_DURATION_S);
+          state.pause();
           return;
         }
-        useTimelineStore.getState().setTime(next);
+        state.setTime(next);
       }
       rafRef.current = requestAnimationFrame(step);
     };
     rafRef.current = requestAnimationFrame(step);
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
     };
   }, [isPlaying, playbackSpeed]);
 
+  return null;
+}
+
+/* -------------------------------------------------------------- */
+
+export function PassTimeline() {
+  const selectedCaseId = useAppStore((s) => s.selectedCaseId);
+  const result = useAppStore((s) => s.results[selectedCaseId]);
+  const { data: ephemeris } = useEphemeris(selectedCaseId);
+
+  // Static (per-result) memos. Critically, NONE of these depend on currentTime.
   const offNadirData = useMemo(() => {
     if (!ephemeris) return [];
     const pts = ephemeris.points;
@@ -131,77 +245,28 @@ export function PassTimeline() {
       const x1 = Number(s.t_start) || 0;
       const x2 = Math.max(Number(s.t_end) || x1, x1 + 0.5);
       const last = merged[merged.length - 1];
-      if (last && x1 - last.x2 <= gap) {
-        last.x2 = Math.max(last.x2, x2);
-      } else {
-        merged.push({ x1, x2 });
-      }
+      if (last && x1 - last.x2 <= gap) last.x2 = Math.max(last.x2, x2);
+      else merged.push({ x1, x2 });
     }
     return merged.slice(0, 30);
   }, [result]);
 
   const window = result?.plan?.diagnostics.imaging_window_s;
-  const speeds = [10, 50, 100];
 
   return (
     <div className="flex flex-col gap-5">
-      {/* Transport bar */}
-      <div className="flex flex-wrap items-center gap-4 border-b border-[var(--ink-rule)] pb-4">
-        <button
-          type="button"
-          onClick={togglePlay}
-          aria-label={isPlaying ? "Pause" : "Play"}
-          className="lift flex h-9 w-9 items-center justify-center border-2 border-[var(--ink)] bg-[var(--paper)] text-[var(--ink)] transition-colors hover:bg-[var(--ink)] hover:text-[var(--paper)]"
-        >
-          {isPlaying ? (
-            <Pause size={13} fill="currentColor" />
-          ) : (
-            <Play size={13} fill="currentColor" className="ml-0.5" />
-          )}
-        </button>
+      <PlaybackEngine />
 
-        <div className="flex items-baseline gap-2">
-          <span
-            className="numeric leading-none text-[var(--ink)]"
-            style={{ fontSize: 26, letterSpacing: "-0.02em" }}
-          >
-            {currentTime.toFixed(1)}
-          </span>
-          <span className="mono-key">s / {PASS_DURATION_S}</span>
-        </div>
-
-        <div className="flex items-stretch border border-[var(--ink-rule)]">
-          {speeds.map((s, i) => (
-            <button
-              key={s}
-              onClick={() => setSpeed(s)}
-              className={cn(
-                "px-3 py-1 text-[10px] tabular-nums uppercase tracking-[0.18em] transition-colors",
-                i > 0 && "border-l border-[var(--ink-rule)]",
-                playbackSpeed === s
-                  ? "bg-[var(--ink)] text-[var(--paper)]"
-                  : "bg-transparent text-[var(--ink-mute)] hover:text-[var(--ink)]"
-              )}
-              style={{ fontFamily: "var(--font-mono)" }}
-            >
-              {s}×
-            </button>
-          ))}
-        </div>
-
-        <input
-          type="range"
-          min={0}
-          max={PASS_DURATION_S}
-          step={0.5}
-          value={currentTime}
-          onChange={(e) => setTime(parseFloat(e.target.value))}
-          className="w-full max-w-md flex-1"
-        />
+      {/* Transport */}
+      <div className="flex flex-wrap items-center gap-4 border-b border-[var(--line)] pb-4">
+        <PlayPauseButton />
+        <TimeReadout />
+        <SpeedPicker />
+        <TimeScrubber />
       </div>
 
-      <ChartFrame label="Off-Nadir Angle" unit="deg" plate="i">
-        <ResponsiveContainer width="100%" height={120}>
+      <ChartFrame label="Off-nadir angle" unit="DEG" tag="01">
+        <ResponsiveContainer width="100%" height={130}>
           <LineChart
             data={offNadirData}
             syncId="timeline"
@@ -216,38 +281,37 @@ export function PassTimeline() {
             <YAxis domain={[0, 75]} {...AXIS} width={32} />
             <ReferenceLine
               y={OFF_NADIR_LIMIT_DEG}
-              stroke={SIGNAL}
+              stroke={DANGER}
               strokeDasharray="4 4"
             />
             {window && (
               <ReferenceArea
                 x1={window[0]}
                 x2={window[1]}
-                fill={INK}
+                fill={PHOS}
                 fillOpacity={0.05}
-                stroke={INK}
-                strokeOpacity={0.25}
+                stroke={PHOS}
+                strokeOpacity={0.3}
               />
             )}
-            <ReferenceLine x={currentTime} stroke={SIGNAL} strokeWidth={1} />
             <Line
               type="monotone"
               dataKey="ona"
-              stroke={INK}
+              stroke={PHOS}
               strokeWidth={1.5}
               dot={false}
               isAnimationActive={false}
             />
             <Tooltip
               contentStyle={TOOLTIP_STYLE}
-              cursor={{ stroke: INK_FAINT }}
+              cursor={{ stroke: FG_FAINT }}
             />
           </LineChart>
         </ResponsiveContainer>
       </ChartFrame>
 
-      <ChartFrame label="Body Rate · Shutters" unit="deg/s" plate="ii">
-        <ResponsiveContainer width="100%" height={120}>
+      <ChartFrame label="Body rate · shutter intervals" unit="DEG/S" tag="02">
+        <ResponsiveContainer width="100%" height={130}>
           <ComposedChart
             data={bodyRateData}
             syncId="timeline"
@@ -262,7 +326,7 @@ export function PassTimeline() {
             <YAxis domain={[0, 0.1]} {...AXIS} width={42} />
             <ReferenceLine
               y={BODY_RATE_LIMIT_DPS}
-              stroke={SIGNAL}
+              stroke={DANGER}
               strokeDasharray="4 4"
             />
             {shutterAreas.map((a, i) => (
@@ -270,25 +334,24 @@ export function PassTimeline() {
                 key={i}
                 x1={a.x1}
                 x2={a.x2}
-                fill={INK}
-                fillOpacity={0.12}
-                stroke={INK}
-                strokeOpacity={0.4}
+                fill={WARN}
+                fillOpacity={0.18}
+                stroke={WARN}
+                strokeOpacity={0.5}
                 strokeWidth={1}
               />
             ))}
-            <ReferenceLine x={currentTime} stroke={SIGNAL} strokeWidth={1} />
             <Line
               type="monotone"
               dataKey="rate"
-              stroke={INK}
-              strokeWidth={1.2}
-              dot={{ r: 2, fill: INK, stroke: INK }}
+              stroke={FG_MUTE}
+              strokeWidth={1.4}
+              dot={false}
               isAnimationActive={false}
             />
             <Tooltip
               contentStyle={TOOLTIP_STYLE}
-              cursor={{ stroke: INK_FAINT }}
+              cursor={{ stroke: FG_FAINT }}
             />
           </ComposedChart>
         </ResponsiveContainer>
@@ -300,29 +363,33 @@ export function PassTimeline() {
 function ChartFrame({
   label,
   unit,
-  plate,
+  tag,
   children,
 }: {
   label: string;
-  unit: string;
-  plate: string;
+  unit?: string;
+  tag?: string;
   children: React.ReactNode;
 }) {
   return (
-    <div className="border border-[var(--ink-rule)] bg-[var(--paper)]">
-      <div className="flex items-baseline justify-between border-b border-[var(--ink-rule)] px-3 py-1.5">
-        <div className="flex items-baseline gap-2">
-          <span
-            className="text-[10px] tabular-nums text-[var(--ink-faint)]"
-            style={{ fontFamily: "var(--font-mono)" }}
-          >
-            pl. {plate}
-          </span>
-          <span className="figcap text-[var(--ink)]">{label}</span>
+    <figure className="relative flex flex-col gap-2 border border-[var(--line)] bg-[var(--bg-sunk)] p-3">
+      <header className="flex items-baseline justify-between">
+        <div className="flex items-baseline gap-3">
+          {tag && (
+            <span className="mono text-[10px] tabular-nums tracking-[0.18em] text-[var(--fg-faint)]">
+              {tag}
+            </span>
+          )}
+          <span className="display text-[13px] text-[var(--fg)]">{label}</span>
         </div>
-        <span className="figcap text-[var(--ink-mute)]">{unit}</span>
+        {unit && (
+          <span className="kbd text-[var(--fg-faint)]">{unit}</span>
+        )}
+      </header>
+      <div className="relative">
+        {children}
+        <CursorOverlay />
       </div>
-      <div className="px-1 py-2">{children}</div>
-    </div>
+    </figure>
   );
 }
