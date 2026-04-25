@@ -20,9 +20,9 @@ const STATUS_COLOR: Record<Status, string> = {
 };
 
 const SIZES = {
-  sm: "text-sm",
-  md: "text-lg",
-  lg: "text-2xl",
+  sm: "text-xl",
+  md: "text-3xl",
+  lg: "text-5xl",
 };
 
 export function DataReadout({
@@ -37,23 +37,20 @@ export function DataReadout({
   const display =
     typeof value === "number" ? value.toFixed(decimals) : value;
   return (
-    <div className={cn("flex flex-col gap-0.5", className)}>
-      <span
-        className="text-[10px] uppercase tracking-[0.12em] text-[var(--text-muted)]"
-        style={{ fontFamily: "var(--font-body)" }}
-      >
-        {label}
-      </span>
-      <div className="flex items-baseline gap-1">
+    <div className={cn("flex flex-col gap-1", className)}>
+      <div className="flex items-center gap-2 border-t border-[var(--border-subtle)] pt-1.5">
+        <span className="micro-label text-[9px]">{label}</span>
+      </div>
+      <div className="flex items-baseline gap-1.5">
         <span
-          className={cn("font-semibold tabular-nums", SIZES[size])}
-          style={{ color: STATUS_COLOR[status], fontFamily: "var(--font-display)" }}
+          className={cn("numeric-display leading-none", SIZES[size])}
+          style={{ color: STATUS_COLOR[status] }}
         >
           {display}
         </span>
         {unit && (
           <span
-            className="text-xs text-[var(--text-secondary)]"
+            className="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]"
             style={{ fontFamily: "var(--font-mono)" }}
           >
             {unit}
@@ -63,3 +60,4 @@ export function DataReadout({
     </div>
   );
 }
+

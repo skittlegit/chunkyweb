@@ -7,11 +7,27 @@ import { useAppStore } from "@/store/useAppStore";
 import { useCases } from "@/hooks/useCases";
 import { DataReadout } from "@/components/shared/DataReadout";
 
-function SectionHeader({ children }: { children: React.ReactNode }) {
+function Section({
+  ordinal,
+  title,
+  children,
+  className,
+}: {
+  ordinal: string;
+  title: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <h3 className="border-b border-[var(--border-subtle)] pb-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-secondary)]">
+    <section className={`flex flex-col gap-3 ${className ?? ""}`}>
+      <header className="flex items-baseline gap-3 border-b border-[var(--border-subtle)] pb-2">
+        <span className="ordinal text-base leading-none">§{ordinal}</span>
+        <h3 className="micro-label text-[10px] text-[var(--text-secondary)]">
+          {title}
+        </h3>
+      </header>
       {children}
-    </h3>
+    </section>
   );
 }
 
@@ -23,45 +39,71 @@ export function Sidebar() {
   const diag = result?.plan?.diagnostics;
 
   return (
-    <aside className="flex w-72 shrink-0 flex-col gap-5 overflow-y-auto border-r border-[var(--border-subtle)] bg-[var(--bg-secondary)] p-4">
-      <section className="flex flex-col gap-2">
-        <SectionHeader>Case</SectionHeader>
+    <aside className="relative flex w-80 shrink-0 flex-col gap-7 overflow-y-auto border-r border-[var(--border-subtle)] bg-[var(--bg-primary)] px-5 py-6">
+      {/* decorative running header */}
+      <div
+        className="-mt-1 flex items-center justify-between text-[9px] uppercase tracking-[0.22em] text-[var(--text-muted)]"
+        style={{ fontFamily: "var(--font-mono)" }}
+      >
+        <span>mission brief</span>
+        <span>p. 01 / 04</span>
+      </div>
+
+      <Section ordinal="01" title="Case File" className="rise-1">
         {selected ? (
-          <div className="flex flex-col gap-1">
-            <p className="text-sm font-medium text-[var(--text-primary)]">
+          <div className="flex flex-col gap-2">
+            <p
+              className="text-2xl font-medium leading-tight text-[var(--text-primary)]"
+              style={{
+                fontFamily: "var(--font-display)",
+                letterSpacing: "-0.02em",
+              }}
+            >
               {selected.name}
             </p>
-            <p className="text-[10px] text-[var(--text-muted)]">
-              weight {selected.weight.toFixed(2)} · est{" "}
-              {selected.off_nadir_estimate_deg.toFixed(0)}° off-nadir
-            </p>
+            <div className="grid grid-cols-2 gap-x-3 gap-y-2 border-t border-[var(--border-subtle)] pt-2">
+              <div className="flex flex-col">
+                <span className="micro-label text-[9px]">weight</span>
+                <span
+                  className="text-sm tabular-nums text-[var(--text-primary)]"
+                  style={{ fontFamily: "var(--font-mono)" }}
+                >
+                  {selected.weight.toFixed(2)}
+                </span>
+              </div>
+              <div className="flex flex-col">
+                <span className="micro-label text-[9px]">est. off-nadir</span>
+                <span
+                  className="text-sm tabular-nums text-[var(--text-primary)]"
+                  style={{ fontFamily: "var(--font-mono)" }}
+                >
+                  {selected.off_nadir_estimate_deg.toFixed(0)}°
+                </span>
+              </div>
+            </div>
           </div>
         ) : (
-          <p className="text-[10px] text-[var(--text-muted)]">
+          <p className="text-[10px] italic text-[var(--text-muted)]">
             Loading case info…
           </p>
         )}
-      </section>
+      </Section>
 
-      <section className="flex flex-col gap-2">
-        <SectionHeader>Strategy</SectionHeader>
+      <Section ordinal="02" title="Strategy" className="rise-2">
         <StrategyPicker />
-      </section>
+      </Section>
 
-      <section className="flex flex-col gap-2">
-        <SectionHeader>Parameters</SectionHeader>
+      <Section ordinal="03" title="Parameters" className="rise-3">
         <ParameterSliders />
-      </section>
+      </Section>
 
-      <section className="flex flex-col gap-2">
-        <SectionHeader>Run</SectionHeader>
+      <Section ordinal="04" title="Execute" className="rise-4">
         <RunButton />
-      </section>
+      </Section>
 
       {diag && (
-        <section className="flex flex-col gap-3">
-          <SectionHeader>Diagnostics</SectionHeader>
-          <div className="grid grid-cols-2 gap-x-3 gap-y-3">
+        <Section ordinal="05" title="Diagnostics">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-4">
             <DataReadout
               label="Coverage"
               value={diag.estimated_coverage}
@@ -109,8 +151,17 @@ export function Sidebar() {
               size="sm"
             />
           </div>
-        </section>
+        </Section>
       )}
+
+      {/* footer rule */}
+      <div
+        className="mt-auto border-t border-[var(--border-subtle)] pt-3 text-[9px] uppercase tracking-[0.22em] text-[var(--text-muted)]"
+        style={{ fontFamily: "var(--font-mono)" }}
+      >
+        — end of brief —
+      </div>
     </aside>
   );
 }
+

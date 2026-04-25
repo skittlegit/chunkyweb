@@ -15,11 +15,11 @@ export const DARK_TILE_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>';
 
 export const TILE_STATUS_COLOR: Record<TileStatus, string> = {
-  imaged: "#10b981",
-  skipped_saturation: "#f59e0b",
-  skipped_time: "#8896ab",
-  unreachable: "#ef4444",
-  pending: "#4a5568",
+  imaged: "#94c11f",
+  skipped_saturation: "#f5a623",
+  skipped_time: "#a39689",
+  unreachable: "#ff3b1f",
+  pending: "#5e564e",
 };
 
 export const TILE_STATUS_LABEL: Record<TileStatus, string> = {
@@ -30,12 +30,12 @@ export const TILE_STATUS_LABEL: Record<TileStatus, string> = {
   pending: "Pending",
 };
 
-export const WHEEL_COLORS = ["#60a5fa", "#34d399", "#fbbf24", "#f87171"];
+export const WHEEL_COLORS = ["#f5a623", "#94c11f", "#d9b26a", "#ff3b1f"];
 
 export const DIFFICULTY_COLOR: Record<string, string> = {
-  easy: "#10b981",
-  moderate: "#f59e0b",
-  hard: "#ef4444",
+  easy: "#94c11f",
+  moderate: "#f5a623",
+  hard: "#ff3b1f",
 };
 
 export const STRATEGIES: { id: "boustrophedon" | "greedy" | "center_first"; label: string; desc: string }[] = [

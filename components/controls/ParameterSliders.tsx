@@ -24,17 +24,19 @@ function SliderRow({
   onChange,
 }: SliderRowProps) {
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-2">
       <div className="flex items-baseline justify-between">
-        <span className="text-[10px] uppercase tracking-[0.12em] text-[var(--text-muted)]">
-          {label}
-        </span>
-        <span
-          className="text-sm font-semibold tabular-nums text-[var(--text-primary)]"
-          style={{ fontFamily: "var(--font-display)" }}
-        >
-          {value.toFixed(1)}
-          <span className="ml-1 text-[10px] text-[var(--text-secondary)]">
+        <span className="micro-label text-[9px]">{label}</span>
+        <span className="flex items-baseline gap-1">
+          <span
+            className="numeric-display text-2xl leading-none text-[var(--text-primary)]"
+          >
+            {value.toFixed(1)}
+          </span>
+          <span
+            className="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]"
+            style={{ fontFamily: "var(--font-mono)" }}
+          >
             {unit}
           </span>
         </span>
@@ -48,7 +50,12 @@ function SliderRow({
         onChange={(e) => onChange(parseFloat(e.target.value))}
         className="w-full"
       />
-      <p className="text-[10px] leading-snug text-[var(--text-muted)]">{hint}</p>
+      <p
+        className="text-[10px] italic leading-snug text-[var(--text-muted)]"
+        style={{ fontFamily: "var(--font-display)" }}
+      >
+        {hint}
+      </p>
     </div>
   );
 }
@@ -60,7 +67,7 @@ export function ParameterSliders() {
   const setOna = useAppStore((s) => s.setOffNadirMargin);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-5">
       <SliderRow
         label="Settle Margin"
         value={settle}

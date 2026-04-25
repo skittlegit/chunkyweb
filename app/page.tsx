@@ -22,13 +22,14 @@ export default function Home() {
       <Navbar />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
-        <main className="flex flex-1 flex-col gap-3 overflow-hidden p-3">
-          <div className="grid flex-1 grid-cols-1 gap-3 overflow-hidden xl:grid-cols-[1.4fr_1fr]">
+        <main className="flex flex-1 flex-col gap-5 overflow-hidden p-5">
+          <div className="grid flex-1 grid-cols-1 gap-5 overflow-hidden xl:grid-cols-[1.4fr_1fr]">
             <Panel
+              ordinal="A"
               title="Coverage Map"
-              subtitle="AOI · orbit ground track · footprints"
+              subtitle="AOI · ground track · footprints"
               contentClassName="p-0"
-              className="min-h-[420px] overflow-hidden"
+              className="min-h-[420px] overflow-hidden rise-1"
             >
               <div className="h-full w-full">
                 <CoverageMap />
@@ -36,48 +37,60 @@ export default function Home() {
             </Panel>
 
             <Panel
+              ordinal="B"
               title="Score Dashboard"
               subtitle={
                 result?.simulate
                   ? `S_orbit = ${result.simulate.score.S_orbit.toFixed(3)}`
                   : "Run plan & simulate to compute score"
               }
-              className="overflow-y-auto"
+              className="overflow-y-auto rise-2"
             >
               {result?.simulate ? (
                 <ScoreCard score={result.simulate.score} />
               ) : (
-                <div className="flex h-48 items-center justify-center text-xs text-[var(--text-muted)]">
-                  No simulation results yet.
+                <div
+                  className="flex h-48 flex-col items-center justify-center gap-2 text-center text-[var(--text-muted)]"
+                >
+                  <span className="micro-label text-[9px]">awaiting input</span>
+                  <span
+                    className="text-2xl italic"
+                    style={{ fontFamily: "var(--font-display)" }}
+                  >
+                    No simulation yet.
+                  </span>
                 </div>
               )}
             </Panel>
           </div>
 
           <Panel
+            ordinal="C"
             title="Pass Timeline"
             subtitle="0 → 720 s · synchronized cross-axis"
-            className="shrink-0"
+            className="shrink-0 rise-3"
           >
             <PassTimeline />
           </Panel>
 
           {result?.simulate?.per_frame && result.simulate.per_frame.length > 0 && (
             <Panel
+              ordinal="D"
               title="Per-Frame Results"
               actions={
                 <button
                   type="button"
                   onClick={() => setFramesOpen((o) => !o)}
-                  className="flex items-center gap-1 rounded-sm border border-[var(--border-subtle)] px-2 py-0.5 text-[10px] text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-tertiary)]"
+                  className="flex items-center gap-1 border border-[var(--border-subtle)] px-2 py-1 text-[10px] uppercase tracking-[0.18em] text-[var(--text-secondary)] transition-colors hover:border-[var(--accent-primary)] hover:text-[var(--accent-primary)]"
+                  style={{ fontFamily: "var(--font-mono)" }}
                 >
                   {framesOpen ? (
                     <>
-                      <ChevronUp size={10} /> Collapse
+                      <ChevronUp size={10} /> collapse
                     </>
                   ) : (
                     <>
-                      <ChevronDown size={10} /> Expand
+                      <ChevronDown size={10} /> expand
                     </>
                   )}
                 </button>
@@ -87,10 +100,15 @@ export default function Home() {
               {framesOpen ? (
                 <FrameTable frames={result.simulate.per_frame} />
               ) : (
-                <p className="text-[10px] text-[var(--text-muted)]">
+                <p
+                  className="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]"
+                  style={{ fontFamily: "var(--font-mono)" }}
+                >
                   {result.simulate.per_frame.length} frames ·{" "}
-                  {result.simulate.per_frame.filter((f) => f.valid).length}{" "}
-                  valid · click expand for details.
+                  <span className="text-[var(--success)]">
+                    {result.simulate.per_frame.filter((f) => f.valid).length} valid
+                  </span>{" "}
+                  · click expand for detail.
                 </p>
               )}
             </Panel>

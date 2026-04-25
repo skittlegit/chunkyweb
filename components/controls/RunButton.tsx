@@ -64,22 +64,56 @@ export function RunButton() {
         onClick={run}
         disabled={isRunning}
         className={cn(
-          "relative flex h-11 items-center justify-center gap-2 overflow-hidden rounded-sm border text-sm font-semibold transition-all",
+          "group relative flex h-14 items-center justify-between overflow-hidden border-2 px-5 transition-all",
           isRunning
             ? "cursor-not-allowed border-[var(--accent-primary)] bg-[var(--accent-primary-dim)] text-[var(--accent-primary)]"
-            : "border-[var(--accent-primary)] bg-[var(--accent-primary)] text-white hover:brightness-110 active:scale-[0.98]"
+            : "border-[var(--accent-primary)] bg-[var(--accent-primary)] text-[var(--bg-primary)] hover:bg-[var(--bg-primary)] hover:text-[var(--accent-primary)] active:translate-x-[2px] active:translate-y-[2px]"
         )}
-        style={{ fontFamily: "var(--font-display)" }}
+        style={{
+          boxShadow: isRunning ? "none" : "4px 4px 0 var(--bg-primary), 4px 4px 0 1px var(--accent-primary)",
+        }}
       >
         {isRunning ? (
           <>
-            <Loader2 size={14} className="animate-spin" />
-            <span className="tabular-nums">PLANNING… {elapsed.toFixed(1)}s</span>
+            <span className="flex items-center gap-2">
+              <Loader2 size={14} className="animate-spin" />
+              <span
+                className="text-[11px] uppercase tracking-[0.22em]"
+                style={{ fontFamily: "var(--font-mono)" }}
+              >
+                planning
+              </span>
+            </span>
+            <span
+              className="numeric-display text-2xl leading-none"
+              style={{ color: "var(--accent-primary)" }}
+            >
+              {elapsed.toFixed(1)}
+              <span
+                className="ml-1 text-[10px]"
+                style={{ fontFamily: "var(--font-mono)" }}
+              >
+                s
+              </span>
+            </span>
           </>
         ) : (
           <>
-            <Play size={14} fill="currentColor" />
-            <span className="tracking-[0.15em]">PLAN &amp; SIMULATE</span>
+            <span className="flex items-center gap-2">
+              <Play size={14} fill="currentColor" />
+              <span
+                className="text-[11px] font-semibold uppercase tracking-[0.28em]"
+                style={{ fontFamily: "var(--font-mono)" }}
+              >
+                plan + simulate
+              </span>
+            </span>
+            <span
+              className="text-lg italic opacity-70 transition-transform group-hover:translate-x-1"
+              style={{ fontFamily: "var(--font-display)" }}
+            >
+              ▸
+            </span>
           </>
         )}
       </button>
@@ -87,13 +121,13 @@ export function RunButton() {
         <p className="text-[10px] leading-snug text-[var(--danger)]">{error}</p>
       )}
       {result?.plan && !isRunning && (
-        <p className="text-[10px] text-[var(--text-muted)]">
+        <p className="border-t border-[var(--border-subtle)] pt-2 text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]"
+           style={{ fontFamily: "var(--font-mono)" }}>
           <span className="text-[var(--success)]">●</span>{" "}
           {result.plan.diagnostics.n_tiles_imaged}/
-          {result.plan.diagnostics.n_tiles_total} tiles · S ={" "}
+          {result.plan.diagnostics.n_tiles_total} tiles · S=
           <span
-            className="font-semibold text-[var(--text-secondary)]"
-            style={{ fontFamily: "var(--font-display)" }}
+            className="ml-0.5 not-italic font-semibold text-[var(--accent-primary)]"
           >
             {result.simulate?.score.S_orbit.toFixed(3) ??
               result.plan.diagnostics.estimated_score.toFixed(3)}

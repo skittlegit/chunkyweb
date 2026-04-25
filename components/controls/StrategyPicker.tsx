@@ -9,8 +9,8 @@ export function StrategyPicker() {
   const setStrategy = useAppStore((s) => s.setStrategy);
 
   return (
-    <div className="flex flex-col gap-1.5">
-      {STRATEGIES.map((s) => {
+    <div className="flex flex-col">
+      {STRATEGIES.map((s, i) => {
         const active = strategy === s.id;
         return (
           <button
@@ -18,31 +18,60 @@ export function StrategyPicker() {
             type="button"
             onClick={() => setStrategy(s.id)}
             className={cn(
-              "group flex flex-col items-start gap-0.5 rounded-sm border px-3 py-2 text-left transition-colors",
+              "group relative flex items-start gap-3 border-b border-[var(--border-subtle)] px-1 py-3 text-left transition-colors first:border-t",
               active
-                ? "border-[var(--accent-primary)] bg-[var(--accent-primary-dim)]"
-                : "border-[var(--border-subtle)] hover:bg-[var(--bg-tertiary)]"
+                ? "bg-[var(--accent-primary-dim)]"
+                : "hover:bg-[var(--bg-secondary)]"
             )}
           >
-            <div className="flex w-full items-center gap-2">
+            {active && (
+              <span
+                aria-hidden
+                className="absolute inset-y-0 left-0 w-[3px] bg-[var(--accent-primary)]"
+                style={{ boxShadow: "0 0 8px var(--accent-primary-glow)" }}
+              />
+            )}
+            <span
+              className={cn(
+                "mt-0.5 shrink-0 text-[10px] tabular-nums",
+                active ? "text-[var(--accent-primary)]" : "text-[var(--text-muted)]"
+              )}
+              style={{ fontFamily: "var(--font-mono)" }}
+            >
+              {String(i + 1).padStart(2, "0")}
+            </span>
+            <span className="flex flex-1 flex-col gap-0.5">
               <span
                 className={cn(
-                  "h-2 w-2 shrink-0 rounded-full border",
+                  "text-base leading-tight",
                   active
-                    ? "border-[var(--accent-primary)] bg-[var(--accent-primary)]"
-                    : "border-[var(--text-muted)]"
+                    ? "text-[var(--text-primary)]"
+                    : "text-[var(--text-primary)]"
                 )}
-              />
-              <span className="text-xs font-medium text-[var(--text-primary)]">
+                style={{
+                  fontFamily: "var(--font-display)",
+                  fontStyle: active ? "italic" : "normal",
+                  letterSpacing: "-0.01em",
+                }}
+              >
                 {s.label}
               </span>
-            </div>
-            <span className="ml-4 text-[10px] leading-snug text-[var(--text-muted)]">
-              {s.desc}
+              <span className="text-[10px] leading-snug text-[var(--text-muted)]">
+                {s.desc}
+              </span>
             </span>
+            {active && (
+              <span
+                className="mt-1 shrink-0 text-[var(--accent-primary)]"
+                style={{ fontFamily: "var(--font-mono)" }}
+              >
+                ◢
+              </span>
+            )}
           </button>
         );
       })}
     </div>
   );
 }
+
