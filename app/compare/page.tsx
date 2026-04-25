@@ -116,7 +116,7 @@ export default function ComparePage() {
                   }
                 >
                   {r?.simulate ? (
-                    <ScoreCard score={r.simulate.score} size={88} />
+                    <ScoreCard score={r.simulate.score} />
                   ) : (
                     <div className="flex h-48 items-center justify-center text-xs text-[var(--text-muted)]">
                       Not run yet — score will appear here.

@@ -23,22 +23,22 @@ import {
   WHEEL_LIMIT_MNMS,
   WHEEL_MARGIN_MNMS,
 } from "@/lib/constants";
-import { Pause, Play, FastForward } from "lucide-react";
+import { Pause, Play } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 const TOOLTIP_STYLE: React.CSSProperties = {
-  backgroundColor: "var(--bg-tertiary)",
-  border: "1px solid var(--border-active)",
-  borderRadius: 6,
+  backgroundColor: "var(--bg-elevated)",
+  border: "1px solid var(--border-strong)",
+  borderRadius: 8,
   color: "var(--text-primary)",
   fontFamily: "var(--font-mono)",
   fontSize: 11,
-  padding: "6px 8px",
+  padding: "8px 10px",
 };
 
 const AXIS = {
   tick: {
-    fill: "var(--text-secondary)",
+    fill: "var(--text-muted)",
     fontSize: 10,
     fontFamily: "var(--font-mono)",
   },
@@ -58,25 +58,33 @@ export function PassTimeline() {
   const playbackSpeed = useTimelineStore((s) => s.playbackSpeed);
   const setSpeed = useTimelineStore((s) => s.setSpeed);
 
-  // Animate playback
+  // Animate playback (RAF only when playing; throttled to ~30fps to keep
+  // chart re-renders cheap)
   const rafRef = useRef<number | null>(null);
   const lastRef = useRef<number>(0);
+  const lastTickRef = useRef<number>(0);
   useEffect(() => {
     if (!isPlaying) {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       return;
     }
     lastRef.current = performance.now();
+    lastTickRef.current = lastRef.current;
     const step = (now: number) => {
       const dt = (now - lastRef.current) / 1000;
       lastRef.current = now;
-      const next = useTimelineStore.getState().currentTime + dt * playbackSpeed;
-      if (next >= PASS_DURATION_S) {
-        useTimelineStore.getState().setTime(PASS_DURATION_S);
-        useTimelineStore.getState().pause();
-        return;
+      // throttle store updates to 30fps
+      if (now - lastTickRef.current >= 33) {
+        lastTickRef.current = now;
+        const next =
+          useTimelineStore.getState().currentTime + dt * playbackSpeed;
+        if (next >= PASS_DURATION_S) {
+          useTimelineStore.getState().setTime(PASS_DURATION_S);
+          useTimelineStore.getState().pause();
+          return;
+        }
+        useTimelineStore.getState().setTime(next);
       }
-      useTimelineStore.getState().setTime(next);
       rafRef.current = requestAnimationFrame(step);
     };
     rafRef.current = requestAnimationFrame(step);
@@ -85,75 +93,116 @@ export function PassTimeline() {
     };
   }, [isPlaying, playbackSpeed]);
 
+  // Down-sample ephemeris to ≤180 points to keep the chart cheap.
   const offNadirData = useMemo(() => {
     if (!ephemeris) return [];
-    return ephemeris.points.map((p) => ({
-      t: p.t,
-      ona: p.off_nadir_to_aoi_center_deg,
-    }));
+    const pts = ephemeris.points;
+    const stride = Math.max(1, Math.ceil(pts.length / 180));
+    const out: { t: number; ona: number }[] = [];
+    for (let i = 0; i < pts.length; i += stride) {
+      out.push({ t: pts[i].t, ona: pts[i].off_nadir_to_aoi_center_deg });
+    }
+    return out;
   }, [ephemeris]);
 
   const momentumData = useMemo(() => {
     const tl = result?.plan?.wheel_momentum_timeline;
     if (!tl) return [];
-    return tl.map((p) => ({
-      t: p.t,
-      w1: p.wheels[0],
-      w2: p.wheels[1],
-      w3: p.wheels[2],
-      w4: p.wheels[3],
-    }));
+    const stride = Math.max(1, Math.ceil(tl.length / 220));
+    const out: {
+      t: number;
+      w1: number;
+      w2: number;
+      w3: number;
+      w4: number;
+    }[] = [];
+    for (let i = 0; i < tl.length; i += stride) {
+      const p = tl[i];
+      out.push({
+        t: p.t,
+        w1: p.wheels[0],
+        w2: p.wheels[1],
+        w3: p.wheels[2],
+        w4: p.wheels[3],
+      });
+    }
+    return out;
   }, [result]);
 
   const bodyRateData = useMemo(() => {
     const frames = result?.simulate?.per_frame;
     if (!frames) return [];
-    return frames.map((f) => ({
-      t: f.t_start,
-      rate: f.body_rate_dps,
-    }));
+    const stride = Math.max(1, Math.ceil(frames.length / 220));
+    const out: { t: number; rate: number }[] = [];
+    for (let i = 0; i < frames.length; i += stride) {
+      out.push({ t: frames[i].t_start, rate: frames[i].body_rate_dps });
+    }
+    return out;
   }, [result]);
 
-  const shutter = result?.plan?.schedule.shutter ?? [];
-  const window = result?.plan?.diagnostics.imaging_window_s;
+  // Aggregate shutter events into ≤30 contiguous bands. Hundreds of
+  // ReferenceArea SVG nodes is a major paint cost on every chart redraw.
+  const shutterAreas = useMemo(() => {
+    const sw = result?.plan?.schedule.shutter ?? [];
+    if (!sw.length) return [];
+    const sorted = [...sw].sort((a, b) => a.t_start - b.t_start);
+    const merged: { x1: number; x2: number }[] = [];
+    const gap = PASS_DURATION_S / 80;
+    for (const s of sorted) {
+      const x1 = s.t_start;
+      const x2 = s.t_start + Math.max(s.duration, 0.5);
+      const last = merged[merged.length - 1];
+      if (last && x1 - last.x2 <= gap) {
+        last.x2 = Math.max(last.x2, x2);
+      } else {
+        merged.push({ x1, x2 });
+      }
+    }
+    return merged.slice(0, 30);
+  }, [result]);
 
+  const window = result?.plan?.diagnostics.imaging_window_s;
   const speeds = [10, 50, 100];
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-5">
       {/* Controls */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={togglePlay}
-            className="flex h-7 w-7 items-center justify-center rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-tertiary)] text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-hover)]"
+            className="lift flex h-9 w-9 items-center justify-center rounded-full border border-[var(--border-strong)] bg-[var(--bg-elevated)] text-[var(--text-primary)] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)]"
           >
             {isPlaying ? (
-              <Pause size={12} fill="currentColor" />
+              <Pause size={13} fill="currentColor" />
             ) : (
-              <Play size={12} fill="currentColor" />
+              <Play size={13} fill="currentColor" className="ml-0.5" />
             )}
           </button>
-          <span
-            className="text-xs tabular-nums text-[var(--text-secondary)]"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
-            t = {currentTime.toFixed(1)}s
-          </span>
-          <div className="flex items-center gap-0.5 rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-primary)] p-0.5">
-            <FastForward size={10} className="ml-1 text-[var(--text-muted)]" />
+          <div className="flex items-baseline gap-1.5">
+            <span className="numeric-display text-2xl leading-none text-[var(--text-primary)]">
+              {currentTime.toFixed(1)}
+            </span>
+            <span
+              className="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]"
+              style={{ fontFamily: "var(--font-mono)" }}
+            >
+              s / {PASS_DURATION_S}
+            </span>
+          </div>
+          <div className="ml-2 flex items-center gap-1 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-primary)] p-0.5">
             {speeds.map((s) => (
               <button
                 key={s}
                 onClick={() => setSpeed(s)}
                 className={cn(
-                  "rounded-[2px] px-1.5 py-0.5 text-[10px] transition-colors",
+                  "rounded-full px-2.5 py-1 text-[10px] font-medium tabular-nums transition-colors",
                   playbackSpeed === s
-                    ? "bg-[var(--accent-primary)] text-white"
-                    : "text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]"
+                    ? "bg-[var(--accent)] text-[var(--accent-ink)]"
+                    : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                 )}
-                style={{ fontFamily: "var(--font-display)" }}
+                style={{ fontFamily: "var(--font-mono)" }}
               >
                 {s}×
               </button>
@@ -167,36 +216,31 @@ export function PassTimeline() {
           step={0.5}
           value={currentTime}
           onChange={(e) => setTime(parseFloat(e.target.value))}
-          className="w-64"
+          className="w-full max-w-md flex-1"
         />
       </div>
 
-      {/* Off-nadir */}
-      <ChartFrame label="Off-Nadir Angle" unit="°">
-        <ResponsiveContainer width="100%" height={90}>
-          <LineChart data={offNadirData} syncId="timeline" margin={{ top: 6, right: 8, bottom: 4, left: 8 }}>
+      <ChartFrame label="Off-Nadir Angle" unit="deg">
+        <ResponsiveContainer width="100%" height={96}>
+          <LineChart
+            data={offNadirData}
+            syncId="timeline"
+            margin={{ top: 6, right: 12, bottom: 4, left: 8 }}
+          >
             <XAxis dataKey="t" type="number" domain={[0, PASS_DURATION_S]} {...AXIS} />
             <YAxis domain={[0, 75]} {...AXIS} width={32} />
-            <ReferenceLine
-              y={OFF_NADIR_LIMIT_DEG}
-              stroke="var(--danger)"
-              strokeDasharray="4 4"
-            />
+            <ReferenceLine y={OFF_NADIR_LIMIT_DEG} stroke="var(--danger)" strokeDasharray="4 4" />
             {window && (
               <ReferenceArea
                 x1={window[0]}
                 x2={window[1]}
-                fill="var(--accent-primary)"
-                fillOpacity={0.05}
-                stroke="var(--accent-primary)"
-                strokeOpacity={0.2}
+                fill="var(--accent)"
+                fillOpacity={0.06}
+                stroke="var(--accent)"
+                strokeOpacity={0.25}
               />
             )}
-            <ReferenceLine
-              x={currentTime}
-              stroke="var(--sat-marker)"
-              strokeWidth={1}
-            />
+            <ReferenceLine x={currentTime} stroke="var(--sat-marker)" strokeWidth={1} />
             <Line
               type="monotone"
               dataKey="ona"
@@ -210,10 +254,13 @@ export function PassTimeline() {
         </ResponsiveContainer>
       </ChartFrame>
 
-      {/* Wheel momentum */}
       <ChartFrame label="Wheel Momentum" unit="mNms">
-        <ResponsiveContainer width="100%" height={110}>
-          <LineChart data={momentumData} syncId="timeline" margin={{ top: 6, right: 8, bottom: 4, left: 8 }}>
+        <ResponsiveContainer width="100%" height={120}>
+          <LineChart
+            data={momentumData}
+            syncId="timeline"
+            margin={{ top: 6, right: 12, bottom: 4, left: 8 }}
+          >
             <XAxis dataKey="t" type="number" domain={[0, PASS_DURATION_S]} {...AXIS} />
             <YAxis domain={[-32, 32]} {...AXIS} width={32} />
             <ReferenceLine y={WHEEL_LIMIT_MNMS} stroke="var(--danger)" strokeDasharray="4 4" />
@@ -227,7 +274,7 @@ export function PassTimeline() {
                 type="monotone"
                 dataKey={k}
                 stroke={WHEEL_COLORS[i]}
-                strokeWidth={1}
+                strokeWidth={1.2}
                 dot={false}
                 isAnimationActive={false}
               />
@@ -237,22 +284,25 @@ export function PassTimeline() {
         </ResponsiveContainer>
       </ChartFrame>
 
-      {/* Body rate + shutter */}
-      <ChartFrame label="Body Rate · Shutters" unit="°/s">
-        <ResponsiveContainer width="100%" height={90}>
-          <ComposedChart data={bodyRateData} syncId="timeline" margin={{ top: 6, right: 8, bottom: 4, left: 8 }}>
+      <ChartFrame label="Body Rate · Shutters" unit="deg/s">
+        <ResponsiveContainer width="100%" height={96}>
+          <ComposedChart
+            data={bodyRateData}
+            syncId="timeline"
+            margin={{ top: 6, right: 12, bottom: 4, left: 8 }}
+          >
             <XAxis dataKey="t" type="number" domain={[0, PASS_DURATION_S]} {...AXIS} />
             <YAxis domain={[0, 0.1]} {...AXIS} width={32} />
             <ReferenceLine y={BODY_RATE_LIMIT_DPS} stroke="var(--danger)" strokeDasharray="4 4" />
-            {shutter.slice(0, 200).map((sw, i) => (
+            {shutterAreas.map((a, i) => (
               <ReferenceArea
                 key={i}
-                x1={sw.t_start}
-                x2={sw.t_start + Math.max(sw.duration, 0.5)}
-                fill="var(--success)"
-                fillOpacity={0.4}
-                stroke="var(--success)"
-                strokeOpacity={0.7}
+                x1={a.x1}
+                x2={a.x2}
+                fill="var(--accent)"
+                fillOpacity={0.22}
+                stroke="var(--accent)"
+                strokeOpacity={0.5}
                 strokeWidth={1}
               />
             ))}
@@ -262,7 +312,7 @@ export function PassTimeline() {
               dataKey="rate"
               stroke="var(--text-secondary)"
               strokeWidth={1}
-              dot={{ r: 1.5, fill: "var(--text-secondary)" }}
+              dot={false}
               isAnimationActive={false}
             />
             <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ stroke: "var(--border-active)" }} />
@@ -283,19 +333,19 @@ function ChartFrame({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-primary)]">
-      <div className="flex items-center justify-between border-b border-[var(--border-subtle)] px-2 py-1">
-        <span className="text-[10px] uppercase tracking-[0.12em] text-[var(--text-muted)]">
+    <div className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--bg-primary)]">
+      <div className="flex items-center justify-between border-b border-[var(--border-subtle)] px-3 py-2">
+        <span className="micro-label text-[9px] text-[var(--text-secondary)]">
           {label}
         </span>
         <span
-          className="text-[10px] text-[var(--text-secondary)]"
+          className="text-[9px] uppercase tracking-[0.22em] text-[var(--text-muted)]"
           style={{ fontFamily: "var(--font-mono)" }}
         >
           {unit}
         </span>
       </div>
-      <div className="px-1 py-1">{children}</div>
+      <div className="px-1 py-2">{children}</div>
     </div>
   );
 }

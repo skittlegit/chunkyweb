@@ -10,7 +10,7 @@ interface StatusDotProps {
 }
 
 const COLORS: Record<Status, string> = {
-  normal: "var(--accent-primary)",
+  normal: "var(--accent)",
   success: "var(--success)",
   warning: "var(--warning)",
   danger: "var(--danger)",
@@ -20,7 +20,7 @@ const COLORS: Record<Status, string> = {
 export function StatusDot({ status = "normal", pulse, size = 8, className }: StatusDotProps) {
   return (
     <span
-      className={cn("inline-block rounded-full", pulse && "animate-pulse", className)}
+      className={cn("inline-block rounded-full", pulse && "pulse-soft", className)}
       style={{
         width: size,
         height: size,

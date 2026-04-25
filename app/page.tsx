@@ -1,118 +1,96 @@
 "use client";
 
+import { useState } from "react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { StatusBar } from "@/components/layout/StatusBar";
-import { Panel } from "@/components/shared/Panel";
 import { CoverageMap } from "@/components/map/CoverageMap";
 import { PassTimeline } from "@/components/timeline/PassTimeline";
 import { ScoreCard } from "@/components/score/ScoreCard";
 import { FrameTable } from "@/components/score/FrameTable";
+import { Panel } from "@/components/shared/Panel";
 import { useAppStore } from "@/store/useAppStore";
-import { useState } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
 
-export default function Home() {
+export default function Page() {
   const selectedCaseId = useAppStore((s) => s.selectedCaseId);
   const result = useAppStore((s) => s.results[selectedCaseId]);
   const [framesOpen, setFramesOpen] = useState(false);
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden">
+    <div className="flex h-screen flex-col overflow-hidden bg-[var(--bg-primary)] text-[var(--text-primary)] app-vignette">
       <Navbar />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
-        <main className="flex flex-1 flex-col gap-5 overflow-hidden p-5">
-          <div className="grid flex-1 grid-cols-1 gap-5 overflow-hidden xl:grid-cols-[1.4fr_1fr]">
+        <main className="flex flex-1 flex-col gap-6 overflow-y-auto p-7">
+          <div className="grid flex-1 grid-cols-1 gap-6 xl:grid-cols-[1.6fr_1fr]">
             <Panel
-              ordinal="A"
               title="Coverage Map"
-              subtitle="AOI · ground track · footprints"
+              subtitle="Sub-satellite track and tile state."
+              ordinal="01 / 04"
+              className="rise rise-1 min-h-[420px] overflow-hidden"
               contentClassName="p-0"
-              className="min-h-[420px] overflow-hidden rise-1"
             >
-              <div className="h-full w-full">
+              <div className="h-full min-h-[420px]">
                 <CoverageMap />
               </div>
             </Panel>
 
             <Panel
-              ordinal="B"
-              title="Score Dashboard"
-              subtitle={
-                result?.simulate
-                  ? `S_orbit = ${result.simulate.score.S_orbit.toFixed(3)}`
-                  : "Run plan & simulate to compute score"
-              }
-              className="overflow-y-auto rise-2"
+              title="Score Breakdown"
+              subtitle="Composite figure of merit for the simulated pass."
+              ordinal="02 / 04"
+              className="rise rise-2"
             >
               {result?.simulate ? (
                 <ScoreCard score={result.simulate.score} />
               ) : (
-                <div
-                  className="flex h-48 flex-col items-center justify-center gap-2 text-center text-[var(--text-muted)]"
-                >
-                  <span className="micro-label text-[9px]">awaiting input</span>
-                  <span
-                    className="text-2xl italic"
-                    style={{ fontFamily: "var(--font-display)" }}
-                  >
-                    No simulation yet.
-                  </span>
+                <div className="flex h-full min-h-[260px] items-center justify-center">
+                  <p className="serif-italic text-[14px] text-[var(--text-muted)]">
+                    Run a simulation to see the orbital score.
+                  </p>
                 </div>
               )}
             </Panel>
           </div>
 
           <Panel
-            ordinal="C"
             title="Pass Timeline"
-            subtitle="0 → 720 s · synchronized cross-axis"
-            className="shrink-0 rise-3"
+            subtitle="Off-nadir profile, wheel momentum and shutter cadence."
+            ordinal="03 / 04"
+            className="rise rise-3"
           >
             <PassTimeline />
           </Panel>
 
-          {result?.simulate?.per_frame && result.simulate.per_frame.length > 0 && (
-            <Panel
-              ordinal="D"
-              title="Per-Frame Results"
-              actions={
-                <button
-                  type="button"
-                  onClick={() => setFramesOpen((o) => !o)}
-                  className="flex items-center gap-1 border border-[var(--border-subtle)] px-2 py-1 text-[10px] uppercase tracking-[0.18em] text-[var(--text-secondary)] transition-colors hover:border-[var(--accent-primary)] hover:text-[var(--accent-primary)]"
-                  style={{ fontFamily: "var(--font-mono)" }}
-                >
-                  {framesOpen ? (
-                    <>
-                      <ChevronUp size={10} /> collapse
-                    </>
-                  ) : (
-                    <>
-                      <ChevronDown size={10} /> expand
-                    </>
-                  )}
-                </button>
-              }
-              className="shrink-0"
-            >
-              {framesOpen ? (
+          <Panel
+            title="Per-Frame Gates"
+            subtitle="Smear, off-nadir and saturation checks for each shutter."
+            ordinal="04 / 04"
+            className="rise rise-4"
+            actions={
+              <button
+                type="button"
+                onClick={() => setFramesOpen((v) => !v)}
+                className="flex items-center gap-1 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-primary)] px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]"
+                style={{ fontFamily: "var(--font-mono)" }}
+              >
+                {framesOpen ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
+                {framesOpen ? "Collapse" : "Expand"}
+              </button>
+            }
+            contentClassName={framesOpen ? "p-6" : "p-0"}
+          >
+            {framesOpen ? (
+              result?.simulate ? (
                 <FrameTable frames={result.simulate.per_frame} />
               ) : (
-                <p
-                  className="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]"
-                  style={{ fontFamily: "var(--font-mono)" }}
-                >
-                  {result.simulate.per_frame.length} frames ·{" "}
-                  <span className="text-[var(--success)]">
-                    {result.simulate.per_frame.filter((f) => f.valid).length} valid
-                  </span>{" "}
-                  · click expand for detail.
+                <p className="serif-italic text-[13px] text-[var(--text-muted)]">
+                  No frames yet. Run a simulation first.
                 </p>
-              )}
-            </Panel>
-          )}
+              )
+            ) : null}
+          </Panel>
         </main>
       </div>
       <StatusBar />

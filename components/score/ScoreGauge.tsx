@@ -1,113 +1,106 @@
 "use client";
 
-import { cn } from "@/lib/cn";
+import { useMemo } from "react";
 
 interface ScoreGaugeProps {
-  value: number;
-  max?: number;
-  label: string;
+  value: number; // 0..1
+  label?: string;
   size?: number;
-  formula?: string;
 }
 
-export function ScoreGauge({
-  value,
-  max = 1.0,
-  label,
-  size = 110,
-  formula,
-}: ScoreGaugeProps) {
-  const fraction = Math.max(0, Math.min(value / max, 1));
-  const stroke = 4;
-  const radius = (size - stroke * 2) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const arcLength = circumference * 0.75;
-  const filled = arcLength * fraction;
-  const color =
-    fraction > 0.8
-      ? "var(--success)"
-      : fraction > 0.5
-      ? "var(--accent-primary)"
-      : "var(--danger)";
+const TICK_COUNT = 11;
 
-  // tick marks every 10%
-  const ticks = Array.from({ length: 11 }, (_, i) => i / 10);
+export function ScoreGauge({ value, label, size = 140 }: ScoreGaugeProps) {
+  const v = Math.max(0, Math.min(1, value));
+  const stroke = v >= 0.7 ? "var(--accent)" : v >= 0.4 ? "var(--warning)" : "var(--danger)";
+
+  const radius = size / 2 - 16;
+  const circ = 2 * Math.PI * radius;
+  // 270deg sweep starting at 135deg (bottom-left) — leave 90deg gap at bottom
+  const arc = circ * 0.75;
+  const dash = arc * v;
+
+  const ticks = useMemo(() => {
+    const out: { x1: number; y1: number; x2: number; y2: number; major: boolean }[] = [];
+    for (let i = 0; i < TICK_COUNT; i++) {
+      const t = i / (TICK_COUNT - 1);
+      const angle = (135 + t * 270) * (Math.PI / 180);
+      const major = i === 0 || i === TICK_COUNT - 1 || i === Math.floor(TICK_COUNT / 2);
+      const inner = radius - (major ? 8 : 5);
+      const outer = radius + 2;
+      const cx = size / 2;
+      const cy = size / 2;
+      out.push({
+        x1: cx + Math.cos(angle) * inner,
+        y1: cy + Math.sin(angle) * inner,
+        x2: cx + Math.cos(angle) * outer,
+        y2: cy + Math.sin(angle) * outer,
+        major,
+      });
+    }
+    return out;
+  }, [radius, size]);
 
   return (
-    <div className={cn("flex flex-col items-center gap-2")}>
-      <div className="relative" style={{ width: size, height: size }}>
-        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-          {/* tick marks */}
-          {ticks.map((t) => {
-            const angle = 135 + t * 270;
-            const rad = (angle * Math.PI) / 180;
-            const inner = radius - 4;
-            const outer = radius + 1;
-            const cx = size / 2;
-            const cy = size / 2;
-            return (
-              <line
-                key={t}
-                x1={cx + Math.cos(rad) * inner}
-                y1={cy + Math.sin(rad) * inner}
-                x2={cx + Math.cos(rad) * outer}
-                y2={cy + Math.sin(rad) * outer}
-                stroke={t <= fraction ? color : "var(--border-strong)"}
-                strokeWidth={t === 0 || t === 1 || t === 0.5 ? 1.4 : 0.7}
-                opacity={t <= fraction ? 1 : 0.5}
-              />
-            );
-          })}
-          {/* track */}
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            fill="none"
-            stroke="var(--border-subtle)"
-            strokeWidth={stroke}
-            strokeDasharray={`${arcLength} ${circumference}`}
-            strokeLinecap="butt"
-            transform={`rotate(135 ${size / 2} ${size / 2})`}
+    <div className="relative inline-flex flex-col items-center" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="absolute inset-0">
+        {/* Track */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="var(--border-subtle)"
+          strokeWidth={2}
+          strokeDasharray={`${arc} ${circ}`}
+          strokeDashoffset={-circ * 0.125}
+          transform={`rotate(90 ${size / 2} ${size / 2})`}
+          strokeLinecap="round"
+        />
+        {/* Filled arc — no drop-shadow filter */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke={stroke}
+          strokeWidth={3}
+          strokeDasharray={`${dash} ${circ}`}
+          strokeDashoffset={-circ * 0.125}
+          transform={`rotate(90 ${size / 2} ${size / 2})`}
+          strokeLinecap="round"
+          style={{ transition: "stroke-dasharray 0.6s cubic-bezier(.2,.7,.2,1)" }}
+        />
+        {/* Ticks */}
+        {ticks.map((t, i) => (
+          <line
+            key={i}
+            x1={t.x1}
+            y1={t.y1}
+            x2={t.x2}
+            y2={t.y2}
+            stroke={t.major ? "var(--text-secondary)" : "var(--border-strong)"}
+            strokeWidth={t.major ? 1.5 : 1}
+            strokeLinecap="round"
           />
-          {/* filled */}
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            fill="none"
-            stroke={color}
-            strokeWidth={stroke}
-            strokeDasharray={`${filled} ${circumference}`}
-            strokeLinecap="butt"
-            transform={`rotate(135 ${size / 2} ${size / 2})`}
-            style={{
-              transition: "stroke-dasharray 0.6s ease-out, stroke 0.3s",
-              filter: `drop-shadow(0 0 8px ${color})`,
-            }}
-          />
-        </svg>
-        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+        ))}
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span
+          className="numeric-display leading-none"
+          style={{ fontSize: size * 0.32, color: stroke }}
+        >
+          {(v * 100).toFixed(0)}
+        </span>
+        {label && (
           <span
-            className="numeric-display text-[34px] leading-none"
-            style={{ color: "var(--text-primary)" }}
+            className="mt-1 text-[9px] uppercase tracking-[0.22em] text-[var(--text-muted)]"
+            style={{ fontFamily: "var(--font-mono)" }}
           >
-            {value.toFixed(2)}
+            {label}
           </span>
-          {formula && (
-            <span
-              className="mt-1 text-[9px] italic text-[var(--text-muted)]"
-              style={{ fontFamily: "var(--font-display)" }}
-            >
-              {formula}
-            </span>
-          )}
-        </div>
+        )}
       </div>
-      <span className="micro-label text-[9px] text-[var(--text-secondary)]">
-        {label}
-      </span>
     </div>
   );
 }
-
