@@ -53,92 +53,83 @@ export function Sidebar() {
     }
   };
 
+  const passSeconds = activeCase
+    ? Math.round(
+        (new Date(activeCase.pass_end_utc).getTime() -
+          new Date(activeCase.pass_start_utc).getTime()) /
+          1000
+      )
+    : 0;
+
   return (
-    <aside className="relative flex w-[24rem] shrink-0 flex-col overflow-y-auto border-r-2 border-[var(--ink-rule)] bg-[var(--paper)]">
-      {/* Running header — like a chapter masthead */}
-      <div className="flex items-baseline justify-between border-b border-[var(--ink-rule)] px-7 py-3">
-        <span className="figcap">Brief</span>
-        <span className="pagemark">p. 01 / 04</span>
-      </div>
-
-      <div className="flex flex-col gap-9 px-7 py-7">
-        {/* §I — Mission */}
-        <Section index="I" title="Active Pass">
-          {activeCase ? (
-            <div className="flex flex-col gap-3 margin-tick">
-              <h3
-                className="display text-[26px] leading-[1.05] text-[var(--ink)]"
-                style={{ letterSpacing: "-0.018em" }}
-              >
-                {activeCase.name}
-              </h3>
-              <p className="display-italic text-[13px] leading-relaxed text-[var(--ink-soft)]">
-                {new Date(activeCase.pass_start_utc)
+    <aside className="relative flex w-[20rem] shrink-0 flex-col overflow-y-auto border-r border-[var(--ink-rule)] bg-[var(--paper)]">
+      <div className="flex flex-col gap-7 px-6 py-6">
+        {/* Active pass — quiet, factual */}
+        {activeCase ? (
+          <section className="flex flex-col gap-2">
+            <span className="figcap">Active pass</span>
+            <h2
+              className="display text-[22px] leading-[1.1] text-[var(--ink)]"
+              style={{ letterSpacing: "-0.018em" }}
+            >
+              {activeCase.name}
+            </h2>
+            <dl className="mt-1 flex flex-col gap-1 text-[12px] text-[var(--ink-soft)]">
+              <DataRow
+                label="Window"
+                value={`${new Date(activeCase.pass_start_utc)
                   .toUTCString()
-                  .slice(5, 22)}{" "}
-                UTC · {Math.round(
-                  (new Date(activeCase.pass_end_utc).getTime() -
-                    new Date(activeCase.pass_start_utc).getTime()) /
-                    1000
-                )}
-                s window · est. off-nadir{" "}
-                <span className="numeric text-[var(--ink)]">
-                  {activeCase.off_nadir_estimate_deg.toFixed(1)}°
-                </span>
-              </p>
-              <div className="mt-1 flex items-center gap-3">
-                <span
-                  className="border px-2 py-0.5 text-[10px] uppercase tracking-[0.18em]"
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    color: DIFFICULTY_COLOR[activeCase.difficulty],
-                    borderColor: DIFFICULTY_COLOR[activeCase.difficulty],
-                    backgroundColor: "transparent",
-                  }}
-                >
-                  {DIFFICULTY_LABEL[activeCase.difficulty]}
-                </span>
-                <span
-                  className="text-[10px] tabular-nums text-[var(--ink-mute)]"
-                  style={{ fontFamily: "var(--font-mono)" }}
-                >
-                  WEIGHT × {activeCase.weight.toFixed(2)}
-                </span>
-              </div>
-            </div>
-          ) : (
-            <p className="display-italic text-[14px] text-[var(--ink-mute)]">
-              Loading mission parameters…
-            </p>
-          )}
-        </Section>
+                  .slice(17, 25)}Z · ${passSeconds}s`}
+              />
+              <DataRow
+                label="Off-nadir"
+                value={`${activeCase.off_nadir_estimate_deg.toFixed(1)}°`}
+              />
+              <DataRow
+                label="Weight"
+                value={`× ${activeCase.weight.toFixed(2)}`}
+              />
+            </dl>
+            <span
+              className="mt-2 inline-block self-start border px-2 py-0.5 text-[10px] uppercase tracking-[0.18em]"
+              style={{
+                fontFamily: "var(--font-mono)",
+                color: DIFFICULTY_COLOR[activeCase.difficulty],
+                borderColor: DIFFICULTY_COLOR[activeCase.difficulty],
+              }}
+            >
+              {DIFFICULTY_LABEL[activeCase.difficulty]}
+            </span>
+          </section>
+        ) : (
+          <p className="display-italic text-[14px] text-[var(--ink-mute)]">
+            Loading mission parameters…
+          </p>
+        )}
 
-        {/* §II — Strategy */}
-        <Section index="II" title="Tasking Method">
+        <hr className="hr-thin" />
+
+        <Section title="Strategy">
           <StrategyPicker />
         </Section>
 
-        {/* §III — Margins */}
-        <Section index="III" title="Safety Buffers">
+        <Section title="Margins">
           <ParameterSliders />
         </Section>
 
-        {/* §IV — Execute */}
-        <Section index="IV" title="Execute">
+        <div className="sticky bottom-0 -mx-6 mt-2 border-t border-[var(--ink-rule)] bg-[var(--paper)] px-6 py-4">
           <RunButton onClick={handleRun} loading={running} />
           {error && (
-            <p
-              className="mt-3 display-italic text-[12px] text-[var(--signal)]"
-            >
-              ERR — {error.message}
+            <p className="mt-2 text-[12px] text-[var(--signal)]">
+              <span
+                className="mr-1 text-[10px] uppercase tracking-[0.18em]"
+                style={{ fontFamily: "var(--font-mono)" }}
+              >
+                err
+              </span>
+              {error.message}
             </p>
           )}
-        </Section>
-
-        <div
-          className="display-italic mt-2 text-center text-[11px] text-[var(--ink-faint)]"
-        >
-          — end of brief —
         </div>
       </div>
     </aside>
@@ -146,24 +137,35 @@ export function Sidebar() {
 }
 
 function Section({
-  index,
   title,
   children,
 }: {
-  index: string;
   title: string;
   children: React.ReactNode;
 }) {
   return (
-    <section className="flex flex-col gap-4">
-      <header className="flex items-baseline justify-between border-b-2 border-[var(--ink-rule)] pb-1.5">
-        <span className="figcap text-[var(--ink)]">
-          §&nbsp;{index}
-          <span className="mx-2 text-[var(--ink-thread)]">·</span>
-          {title}
-        </span>
-      </header>
+    <section className="flex flex-col gap-3">
+      <span className="figcap">{title}</span>
       {children}
     </section>
+  );
+}
+
+function DataRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-baseline justify-between">
+      <dt
+        className="text-[10px] uppercase tracking-[0.16em] text-[var(--ink-faint)]"
+        style={{ fontFamily: "var(--font-mono)" }}
+      >
+        {label}
+      </dt>
+      <dd
+        className="tabular-nums text-[var(--ink)]"
+        style={{ fontFamily: "var(--font-mono)" }}
+      >
+        {value}
+      </dd>
+    </div>
   );
 }

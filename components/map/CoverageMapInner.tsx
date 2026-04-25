@@ -25,7 +25,12 @@ import {
 } from "@/lib/constants";
 import type { TileInfo } from "@/lib/types";
 
-// Fix default marker icons being absent (we don't use them, but avoids warnings)
+// Resolve actual hex values — Leaflet writes these straight into SVG `stroke`
+// attributes; CSS `var()` strings break in some Safari versions.
+const INK = "#161a2c";
+const SIGNAL = "#d94c1f";
+const INK_SOFT = "#2c3247";
+
 type IconDefaultPrototype = L.Icon.Default & { _getIconUrl?: () => string };
 delete (L.Icon.Default.prototype as IconDefaultPrototype)._getIconUrl;
 
@@ -57,13 +62,21 @@ export default function CoverageMapInner() {
   }, [ephemeris, imagingWindow]);
 
   const satPos = useMemo(() => {
-    if (!ephemeris) return null;
+    if (!ephemeris || ephemeris.points.length === 0) return null;
     const idx = Math.max(
       0,
       Math.min(ephemeris.points.length - 1, Math.round(currentTime))
     );
     const p = ephemeris.points[idx];
-    return p ? { lat: p.lat_deg, lon: p.lon_deg, alt: p.alt_km, ona: p.off_nadir_to_aoi_center_deg, t: p.t } : null;
+    return p
+      ? {
+          lat: p.lat_deg,
+          lon: p.lon_deg,
+          alt: p.alt_km,
+          ona: p.off_nadir_to_aoi_center_deg,
+          t: p.t,
+        }
+      : null;
   }, [ephemeris, currentTime]);
 
   return (
@@ -76,19 +89,19 @@ export default function CoverageMapInner() {
     >
       <TileLayer url={DARK_TILE_URL} attribution={DARK_TILE_ATTRIBUTION} />
 
-      {caseConfig && (
+      {caseConfig && caseConfig.aoi_polygon.length > 0 && (
         <Polygon
           positions={caseConfig.aoi_polygon}
           pathOptions={{
-            color: "var(--aoi-stroke)",
+            color: INK,
             weight: 1.5,
             dashArray: "4 4",
-            fillColor: "var(--aoi-stroke)",
-            fillOpacity: 0.08,
+            fillColor: INK,
+            fillOpacity: 0.04,
           }}
         >
           <Tooltip direction="top" offset={[0, -8]} opacity={1}>
-            <span style={{ fontFamily: "var(--font-display)", fontSize: 11 }}>
+            <span style={{ fontFamily: "var(--font-serif)", fontSize: 11, fontStyle: "italic" }}>
               AOI · {caseConfig.name}
             </span>
           </Tooltip>
@@ -99,10 +112,10 @@ export default function CoverageMapInner() {
         <Polyline
           positions={orbitTrack}
           pathOptions={{
-            color: "var(--orbit-track)",
+            color: INK_SOFT,
             weight: 1,
             dashArray: "2 4",
-            opacity: 0.6,
+            opacity: 0.55,
           }}
         />
       )}
@@ -111,7 +124,7 @@ export default function CoverageMapInner() {
         <Polyline
           positions={insideTrack}
           pathOptions={{
-            color: "var(--orbit-track)",
+            color: INK,
             weight: 2.5,
             opacity: 1,
           }}
@@ -126,15 +139,15 @@ export default function CoverageMapInner() {
           ]}
           radius={5}
           pathOptions={{
-            color: "var(--accent-primary)",
+            color: SIGNAL,
             weight: 2,
-            fillColor: "var(--accent-primary)",
+            fillColor: SIGNAL,
             fillOpacity: 0.4,
           }}
         >
           <Tooltip>
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 10 }}>
-              CA · t={ephemeris.closest_approach.t.toFixed(0)}s · ONA=
+              CA · t={ephemeris.closest_approach.t.toFixed(0)}s · ONA{" "}
               {ephemeris.closest_approach.min_off_nadir_deg.toFixed(2)}°
             </span>
           </Tooltip>
@@ -157,10 +170,10 @@ export default function CoverageMapInner() {
           center={[satPos.lat, satPos.lon]}
           radius={6}
           pathOptions={{
-            color: "var(--sat-marker)",
+            color: INK,
             weight: 2,
-            fillColor: "var(--sat-marker)",
-            fillOpacity: 0.9,
+            fillColor: SIGNAL,
+            fillOpacity: 0.95,
           }}
         >
           <Popup>
@@ -218,7 +231,6 @@ function TileMarker({
     );
   }
 
-  // No footprint → show tile center marker
   return (
     <CircleMarker
       center={[tile.center_lat, tile.center_lon]}

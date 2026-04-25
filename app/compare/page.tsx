@@ -68,38 +68,25 @@ export default function ComparePage() {
     <div className="flex h-screen flex-col overflow-hidden bg-[var(--paper)] text-[var(--ink)]">
       <Navbar />
       <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto flex max-w-[1400px] flex-col gap-8 px-8 py-7">
-          <div className="flex items-baseline justify-between border-b border-[var(--ink-rule)] pb-2">
-            <span className="figcap">
-              Section&nbsp;B
-              <span className="mx-2 text-[var(--ink-thread)]">·</span>
-              Comparison
-            </span>
-            <span className="pagemark">FOLIO 02</span>
-          </div>
-
-          <header className="flex items-end justify-between gap-6 border-b-2 border-[var(--ink-rule)] pb-5">
+        <div className="flex flex-col gap-6 p-6">
+          <header className="flex items-end justify-between gap-6 border-b border-[var(--ink-rule)] pb-5">
             <div className="flex flex-col gap-1">
-              <span className="figcap">Subject</span>
+              <span className="figcap">Compare</span>
               <h1
-                className="display text-[40px] leading-[1.05] text-[var(--ink)]"
-                style={{ letterSpacing: "-0.025em" }}
+                className="display text-[32px] leading-[1.05] text-[var(--ink)]"
+                style={{ letterSpacing: "-0.022em" }}
               >
-                Three passes, one verdict.
+                Three passes, weighted total.
               </h1>
-              <p className="display-italic text-[15px] text-[var(--ink-soft)]">
-                Side-by-side breakdowns for all three cases. Run the full set to
-                compute the weighted S<sub>total</sub>.
-              </p>
             </div>
             <button
               type="button"
               onClick={runAll}
               disabled={busy || !cases}
-              className="lift flex items-center gap-2.5 border-2 border-[var(--ink)] bg-[var(--ink)] px-5 py-3 text-[var(--paper)] transition-colors hover:border-[var(--signal-deep)] hover:bg-[var(--signal)] disabled:cursor-not-allowed disabled:border-[var(--paper-margin)] disabled:bg-[var(--paper-deep)] disabled:text-[var(--ink-faint)]"
+              className="lift flex items-center gap-2 border-2 border-[var(--ink)] bg-[var(--ink)] px-4 py-2.5 text-[var(--paper)] transition-colors hover:bg-[var(--signal)] hover:border-[var(--signal-deep)] disabled:cursor-not-allowed disabled:border-[var(--paper-margin)] disabled:bg-[var(--paper-deep)] disabled:text-[var(--ink-faint)]"
             >
               {busy ? (
-                <Loader2 size={14} className="animate-spin" />
+                <Loader2 size={13} className="animate-spin" />
               ) : (
                 <span
                   className="block h-2 w-2 rounded-full bg-[var(--signal)] blink-signal"
@@ -107,25 +94,23 @@ export default function ComparePage() {
                 />
               )}
               <span
-                className="text-[12px] uppercase tracking-[0.18em]"
+                className="text-[11px] uppercase tracking-[0.18em]"
                 style={{ fontFamily: "var(--font-mono)" }}
               >
-                Run All Cases
+                Run all
               </span>
             </button>
           </header>
 
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
             {(cases ?? []).map((c, i) => {
               const r = results[c.id];
               return (
                 <Panel
                   key={c.id}
-                  figure={`FIG ${String(i + 1).padStart(2, "0")}`}
+                  figure={String(i + 1).padStart(2, "0")}
                   caption={c.name}
-                  description={`Weight ${c.weight.toFixed(2)} · ${c.difficulty}`}
-                  marginalia={`pl. ${i + 1}`}
-                  className="ink-rise"
+                  description={`weight ${c.weight.toFixed(2)} · ${c.difficulty}`}
                   actions={
                     <button
                       onClick={() => runOne(c.id)}
@@ -141,7 +126,7 @@ export default function ComparePage() {
                     <ScoreCard score={r.simulate.score} />
                   ) : (
                     <div className="flex h-56 items-center justify-center">
-                      <p className="display-italic text-[14px] text-[var(--ink-mute)]">
+                      <p className="text-[13px] italic text-[var(--ink-mute)]">
                         Not run yet — score will appear here.
                       </p>
                     </div>
@@ -151,14 +136,8 @@ export default function ComparePage() {
             })}
           </div>
 
-          <Panel
-            figure="FIG 04"
-            caption="Total Score"
-            description="Weighted sum across all three cases."
-            marginalia="finale"
-            bold
-          >
-            <div className="flex flex-col gap-5">
+          <Panel caption="Total" description="Weighted sum across all cases.">
+            <div className="flex flex-col gap-4">
               <code
                 className="break-words text-[12px] leading-relaxed text-[var(--ink-soft)]"
                 style={{ fontFamily: "var(--font-mono)" }}
@@ -167,20 +146,19 @@ export default function ComparePage() {
                 {weightedScores
                   .map(
                     (w) =>
-                      `${w.weight.toFixed(2)} · ${w.score?.toFixed(3) ?? "—"}`
+                      `${w.weight.toFixed(2)}·${w.score?.toFixed(3) ?? "—"}`
                   )
                   .join("  +  ")}
               </code>
-              <div className="flex items-baseline gap-4 border-t border-[var(--ink-rule)] pt-4">
-                <span className="figcap">Result</span>
+              <div className="flex items-baseline gap-3 border-t border-[var(--ink-rule)] pt-3">
                 <span
                   className="numeric leading-none text-[var(--ink)]"
-                  style={{ fontSize: 64, letterSpacing: "-0.04em" }}
+                  style={{ fontSize: 56, letterSpacing: "-0.045em" }}
                 >
                   {sTotal != null ? sTotal.toFixed(3) : "—"}
                 </span>
                 {!allDone && (
-                  <span className="display-italic text-[13px] text-[var(--ink-mute)]">
+                  <span className="text-[12px] italic text-[var(--ink-mute)]">
                     Run all 3 cases to compute total.
                   </span>
                 )}
