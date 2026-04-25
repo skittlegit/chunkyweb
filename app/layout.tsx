@@ -1,26 +1,32 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Sans, JetBrains_Mono, Fraunces } from "next/font/google";
+import { Source_Serif_4, IBM_Plex_Mono, Newsreader } from "next/font/google";
 import "leaflet/dist/leaflet.css";
 import "./globals.css";
 import { Providers } from "./providers";
 
-const ibmPlex = IBM_Plex_Sans({
-  variable: "--font-ibm-plex-sans",
+// Body / display serif — Source Serif 4 has gorgeous oldstyle figures and
+// reads beautifully at small sizes (think academic journal).
+const sourceSerif = Source_Serif_4({
+  variable: "--font-serif",
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
-});
-
-const jetbrains = JetBrains_Mono({
-  variable: "--font-jetbrains-mono",
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-});
-
-const fraunces = Fraunces({
-  variable: "--font-fraunces",
-  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
   style: ["normal", "italic"],
-  axes: ["SOFT", "opsz"],
+});
+
+// Display serif — Newsreader has a literary-magazine feel, used italic
+// for figure captions and large numerals.
+const newsreader = Newsreader({
+  variable: "--font-display",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  style: ["normal", "italic"],
+});
+
+// Engineering monospace — IBM Plex Mono pairs naturally with technical print.
+const plexMono = IBM_Plex_Mono({
+  variable: "--font-mono",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600"],
 });
 
 export const metadata: Metadata = {
@@ -36,7 +42,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${ibmPlex.variable} ${jetbrains.variable} ${fraunces.variable} h-full antialiased`}
+      className={`${sourceSerif.variable} ${newsreader.variable} ${plexMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <Providers>{children}</Providers>

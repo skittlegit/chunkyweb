@@ -9,6 +9,7 @@ import type {
   SimulateRequest,
   SimulateResponse,
   ValidateResponse,
+  AttitudeSample,
 } from "./types";
 
 const API_BASE =
@@ -147,6 +148,193 @@ function adaptEphemeris(raw: RawEphemerisResponse): EphemerisResponse {
   return { case_id: raw.case_id, points, closest_approach };
 }
 
+// ----------------------------------------------------------------
+// Plan + Simulate adapters — backend ships a flatter shape than
+// what the UI consumes. Translate at the API boundary so component
+// code can stay strongly typed.
+// ----------------------------------------------------------------
+
+interface RawShutter {
+  t_start: number;
+  t_end?: number;
+  duration?: number;
+  footprint?: [number, number][];
+  [k: string]: unknown;
+}
+
+interface RawSchedule {
+  objective?: string;
+  attitude?: AttitudeSample[];
+  shutters?: RawShutter[];
+  shutter?: RawShutter[];
+  notes?: string;
+  meta?: Record<string, unknown>;
+  [k: string]: unknown;
+}
+
+interface RawPlanResponse {
+  schedule: RawSchedule;
+  diagnostics?: Partial<PlanResponse["diagnostics"]> & Record<string, unknown>;
+  ephemeris_summary?: PlanResponse["ephemeris_summary"];
+  tiles?: PlanResponse["tiles"];
+  footprints?: number[][][];
+  wheel_momentum_timeline?: PlanResponse["wheel_momentum_timeline"];
+}
+
+function adaptSchedule(raw: RawSchedule | undefined): Schedule {
+  const list = raw?.shutters ?? raw?.shutter ?? [];
+  const shutters = list.map((s) => {
+    const t_start = Number(s.t_start ?? 0);
+    const t_end =
+      typeof s.t_end === "number"
+        ? s.t_end
+        : t_start + Number(s.duration ?? 0);
+    return {
+      ...s,
+      t_start,
+      t_end,
+      duration: Math.max(0, t_end - t_start),
+      footprint: s.footprint,
+    };
+  });
+  return {
+    objective: raw?.objective,
+    attitude: (raw?.attitude as AttitudeSample[] | undefined) ?? [],
+    shutters,
+    notes: raw?.notes,
+    meta: raw?.meta,
+  };
+}
+
+function adaptPlan(raw: RawPlanResponse): PlanResponse {
+  const schedule = adaptSchedule(raw.schedule);
+
+  // Diagnostics: ensure shape, fill gaps from schedule when possible.
+  const d = raw.diagnostics ?? {};
+  const window: [number, number] =
+    Array.isArray(d.imaging_window_s) && d.imaging_window_s.length === 2
+      ? [Number(d.imaging_window_s[0]) || 0, Number(d.imaging_window_s[1]) || 0]
+      : schedule.shutters.length
+      ? [
+          schedule.shutters[0].t_start,
+          schedule.shutters[schedule.shutters.length - 1].t_end,
+        ]
+      : [0, 0];
+
+  const diagnostics: PlanResponse["diagnostics"] = {
+    n_tiles_total: Number(d.n_tiles_total ?? raw.tiles?.length ?? 0),
+    n_tiles_imaged: Number(
+      d.n_tiles_imaged ?? schedule.shutters.length ?? 0
+    ),
+    estimated_coverage: Number(d.estimated_coverage ?? 0),
+    estimated_score: Number(d.estimated_score ?? 0),
+    total_slew_time_s: Number(d.total_slew_time_s ?? 0),
+    max_wheel_momentum_fraction: Number(d.max_wheel_momentum_fraction ?? 0),
+    imaging_window_s: window,
+    closest_approach_s: Number(d.closest_approach_s ?? 0),
+  };
+
+  return {
+    schedule,
+    diagnostics,
+    ephemeris_summary:
+      raw.ephemeris_summary ?? {
+        closest_approach_t: 0,
+        min_off_nadir_deg: 0,
+        sub_sat_lat_at_ca: 0,
+        sub_sat_lon_at_ca: 0,
+      },
+    tiles: raw.tiles ?? [],
+    wheel_momentum_timeline: raw.wheel_momentum_timeline ?? [],
+  };
+}
+
+interface RawSimulateResponse {
+  // New flat shape from backend
+  score?: number | SimulateResponse["score"];
+  coverage?: number;
+  eta_E?: number;
+  eta_T?: number;
+  Q_smear?: number;
+  delta_h_used_nms?: number;
+  t_active_s?: number;
+  n_shutters?: number;
+  body_rates_deg_per_s?: number[];
+  diagnostics?: Record<string, unknown>;
+  // Pre-existing UI shape, in case it's already adapted
+  per_frame?: SimulateResponse["per_frame"];
+  total_score?: SimulateResponse["total_score"];
+}
+
+function adaptSimulate(
+  raw: RawSimulateResponse,
+  schedule?: Schedule
+): SimulateResponse {
+  const rawScore = raw.score;
+  let score: SimulateResponse["score"];
+  if (typeof rawScore === "number") {
+    const C = Number(raw.coverage ?? 0);
+    const eta_E = Number(raw.eta_E ?? 0);
+    const eta_T = Number(raw.eta_T ?? 0);
+    const Q_smear = Number(raw.Q_smear ?? 0);
+    score = {
+      S_orbit: Number(rawScore),
+      C,
+      eta_E,
+      eta_T,
+      Q_smear,
+      breakdown: `Coverage ${(C * 100).toFixed(0)}% · effort η ${eta_E.toFixed(2)} · time η ${eta_T.toFixed(2)} · smear ${Q_smear.toFixed(2)}`,
+    };
+  } else if (rawScore && typeof rawScore === "object") {
+    score = rawScore;
+  } else {
+    score = { S_orbit: 0, C: 0, eta_E: 0, eta_T: 0, Q_smear: 0, breakdown: "" };
+  }
+
+  // Synthesize per_frame from body_rates if backend didn't provide it.
+  let per_frame: SimulateResponse["per_frame"];
+  if (Array.isArray(raw.per_frame)) {
+    per_frame = raw.per_frame;
+  } else {
+    const rates = raw.body_rates_deg_per_s ?? [];
+    const shutters = schedule?.shutters ?? [];
+    per_frame = rates.map((rate, i) => {
+      const sh = shutters[i];
+      const fp = sh?.footprint?.[0];
+      const smearOk = rate <= 0.05;
+      return {
+        shutter_index: i,
+        t_start: sh?.t_start ?? 0,
+        valid: smearOk,
+        body_rate_dps: rate,
+        off_nadir_deg: 0,
+        wheel_max_fraction: 0,
+        footprint_center_llh: [
+          fp ? Number(fp[1]) : 0,
+          fp ? Number(fp[0]) : 0,
+        ] as [number, number],
+        gate_status: {
+          smear: smearOk ? ("pass" as const) : ("fail" as const),
+          off_nadir: "pass" as const,
+          saturation: "pass" as const,
+        },
+      };
+    });
+  }
+
+  return {
+    score,
+    per_frame,
+    total_score:
+      raw.total_score ?? {
+        S_case1: null,
+        S_case2: null,
+        S_case3: null,
+        S_total: null,
+      },
+  };
+}
+
 export const api = {
   baseUrl: API_BASE,
   health: () => apiFetch<HealthResponse>("/health"),
@@ -164,16 +352,21 @@ export const api = {
     );
     return adaptEphemeris(raw);
   },
-  plan: (params: PlanRequest) =>
-    apiFetch<PlanResponse>("/api/plan", {
+  plan: async (params: PlanRequest): Promise<PlanResponse> => {
+    const raw = await apiFetch<RawPlanResponse>("/api/plan", {
       method: "POST",
       body: JSON.stringify(params),
-    }),
-  simulate: (params: SimulateRequest) =>
-    apiFetch<SimulateResponse>("/api/simulate", {
+    });
+    return adaptPlan(raw);
+  },
+  simulate: async (params: SimulateRequest): Promise<SimulateResponse> => {
+    // Send the schedule in backend-native shape (shutters with t_end).
+    const raw = await apiFetch<RawSimulateResponse>("/api/simulate", {
       method: "POST",
       body: JSON.stringify(params),
-    }),
+    });
+    return adaptSimulate(raw, params.schedule);
+  },
   validate: (schedule: Schedule) =>
     apiFetch<ValidateResponse>("/api/validate", {
       method: "POST",

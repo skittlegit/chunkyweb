@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Play } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 interface RunButtonProps {
@@ -16,33 +16,45 @@ export function RunButton({
   onClick,
   loading = false,
   disabled = false,
-  label = "Run Simulation",
-  loadingLabel = "Running…",
+  label = "Initiate Pass",
+  loadingLabel = "Computing…",
   className,
 }: RunButtonProps) {
+  const idle = !loading && !disabled;
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={loading || disabled}
       className={cn(
-        "lift group relative flex w-full items-center justify-center gap-2.5 overflow-hidden rounded-[var(--radius-md)] px-5 py-3.5 transition-all",
-        loading || disabled
-          ? "cursor-not-allowed bg-[var(--bg-elevated)] text-[var(--text-muted)]"
-          : "bg-[var(--accent)] text-[var(--accent-ink)] hover:shadow-[0_0_0_4px_var(--accent-soft)]",
+        "lift group relative flex w-full items-center justify-between gap-3 border-2 px-4 py-3.5 transition-colors",
+        idle
+          ? "border-[var(--ink)] bg-[var(--ink)] text-[var(--paper)] hover:border-[var(--signal-deep)] hover:bg-[var(--signal)]"
+          : "cursor-not-allowed border-[var(--paper-margin)] bg-[var(--paper-deep)] text-[var(--ink-faint)]",
         className
       )}
     >
-      {loading ? (
-        <Loader2 size={15} className="animate-spin" />
-      ) : (
-        <Play size={13} fill="currentColor" />
-      )}
+      <span className="flex items-center gap-2.5">
+        {loading ? (
+          <Loader2 size={14} className="animate-spin" />
+        ) : (
+          <span
+            className="block h-2 w-2 rounded-full bg-[var(--signal)] blink-signal"
+            aria-hidden
+          />
+        )}
+        <span
+          className="text-[12px] font-medium uppercase tracking-[0.18em]"
+          style={{ fontFamily: "var(--font-mono)" }}
+        >
+          {loading ? loadingLabel : label}
+        </span>
+      </span>
       <span
-        className="text-[12px] font-semibold uppercase tracking-[0.16em]"
-        style={{ fontFamily: "var(--font-mono)" }}
+        className="display-italic text-[13px]"
+        style={{ color: "inherit" }}
       >
-        {loading ? loadingLabel : label}
+        →
       </span>
     </button>
   );

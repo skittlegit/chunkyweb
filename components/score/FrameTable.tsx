@@ -6,12 +6,11 @@ import { cn } from "@/lib/cn";
 
 const Gate = ({ ok }: { ok: boolean }) => (
   <span
-    className={cn(
-      "inline-block rounded-sm px-1 text-[10px] font-semibold tabular-nums",
-      ok
-        ? "bg-[var(--success-dim)] text-[var(--success)]"
-        : "bg-[var(--danger-dim)] text-[var(--danger)]"
-    )}
+    className="inline-block w-4 text-center text-[12px]"
+    style={{
+      fontFamily: "var(--font-mono)",
+      color: ok ? "var(--go)" : "var(--signal)",
+    }}
   >
     {ok ? "✓" : "✗"}
   </span>
@@ -23,28 +22,42 @@ export function FrameTable({ frames }: { frames: FrameResult[] }) {
 
   if (!frames.length) {
     return (
-      <p className="text-[10px] text-[var(--text-muted)]">No frames yet.</p>
+      <p className="display-italic text-[13px] text-[var(--ink-mute)]">
+        No frames simulated yet — initiate a pass to populate the table.
+      </p>
     );
   }
 
   return (
     <div className="overflow-x-auto">
       <table
-        className="w-full border-collapse text-xs"
+        className="w-full border-collapse text-[12px]"
         style={{ fontFamily: "var(--font-mono)" }}
       >
         <thead>
-          <tr className="border-b border-[var(--border-subtle)] text-[10px] uppercase tracking-wider text-[var(--text-muted)]">
-            <th className="px-2 py-1.5 text-left">#</th>
-            <th className="px-2 py-1.5 text-right">t (s)</th>
-            <th className="px-2 py-1.5 text-right">lat,lon</th>
-            <th className="px-2 py-1.5 text-right">ONA °</th>
-            <th className="px-2 py-1.5 text-right">ω °/s</th>
-            <th className="px-2 py-1.5 text-right">wheel</th>
-            <th className="px-2 py-1.5 text-center">smear</th>
-            <th className="px-2 py-1.5 text-center">ona</th>
-            <th className="px-2 py-1.5 text-center">sat</th>
-            <th className="px-2 py-1.5 text-center">valid</th>
+          <tr className="border-b-2 border-[var(--ink-rule)]">
+            {[
+              "#",
+              "t (s)",
+              "lat,lon",
+              "ONA °",
+              "ω °/s",
+              "wheel",
+              "smear",
+              "ona",
+              "sat",
+              "valid",
+            ].map((h, i) => (
+              <th
+                key={h}
+                className={cn(
+                  "px-3 py-2 text-[10px] uppercase tracking-[0.18em] text-[var(--ink-mute)]",
+                  i <= 1 ? "text-left" : i <= 5 ? "text-right" : "text-center"
+                )}
+              >
+                {h}
+              </th>
+            ))}
           </tr>
         </thead>
         <tbody>
@@ -55,43 +68,48 @@ export function FrameTable({ frames }: { frames: FrameResult[] }) {
                 key={i}
                 onClick={() => selectFrame(active ? null : i)}
                 className={cn(
-                  "cursor-pointer border-b border-[var(--border-subtle)]/50 transition-colors",
+                  "cursor-pointer border-b border-[var(--ink-thread)] transition-colors",
                   active
-                    ? "bg-[var(--accent-primary-dim)]"
+                    ? "bg-[var(--ink)] text-[var(--paper)]"
                     : i % 2 === 0
-                    ? "bg-[var(--bg-secondary)] hover:bg-[var(--bg-hover)]"
-                    : "bg-[var(--bg-tertiary)] hover:bg-[var(--bg-hover)]"
+                    ? "bg-[var(--paper-edge)] hover:bg-[var(--paper-onion)]"
+                    : "bg-[var(--paper)] hover:bg-[var(--paper-onion)]"
                 )}
               >
-                <td className="px-2 py-1 text-[var(--text-muted)]">
-                  {f.shutter_index}
+                <td
+                  className={cn(
+                    "px-3 py-1.5 text-[var(--ink-faint)]",
+                    active && "text-[var(--paper-margin)]"
+                  )}
+                >
+                  {String(f.shutter_index).padStart(2, "0")}
                 </td>
-                <td className="px-2 py-1 text-right tabular-nums text-[var(--text-secondary)]">
+                <td className="px-3 py-1.5 text-right tabular-nums">
                   {f.t_start.toFixed(2)}
                 </td>
-                <td className="px-2 py-1 text-right tabular-nums text-[var(--text-secondary)]">
+                <td className="px-3 py-1.5 text-right tabular-nums">
                   {f.footprint_center_llh[0].toFixed(2)},
                   {f.footprint_center_llh[1].toFixed(2)}
                 </td>
-                <td className="px-2 py-1 text-right tabular-nums text-[var(--text-primary)]">
+                <td className="px-3 py-1.5 text-right tabular-nums">
                   {f.off_nadir_deg.toFixed(1)}
                 </td>
-                <td className="px-2 py-1 text-right tabular-nums text-[var(--text-primary)]">
+                <td className="px-3 py-1.5 text-right tabular-nums">
                   {f.body_rate_dps.toFixed(3)}
                 </td>
-                <td className="px-2 py-1 text-right tabular-nums text-[var(--text-primary)]">
+                <td className="px-3 py-1.5 text-right tabular-nums">
                   {(f.wheel_max_fraction * 100).toFixed(0)}%
                 </td>
-                <td className="px-2 py-1 text-center">
+                <td className="px-3 py-1.5 text-center">
                   <Gate ok={f.gate_status.smear === "pass"} />
                 </td>
-                <td className="px-2 py-1 text-center">
+                <td className="px-3 py-1.5 text-center">
                   <Gate ok={f.gate_status.off_nadir === "pass"} />
                 </td>
-                <td className="px-2 py-1 text-center">
+                <td className="px-3 py-1.5 text-center">
                   <Gate ok={f.gate_status.saturation === "pass"} />
                 </td>
-                <td className="px-2 py-1 text-center">
+                <td className="px-3 py-1.5 text-center">
                   <Gate ok={f.valid} />
                 </td>
               </tr>

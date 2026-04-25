@@ -10,22 +10,30 @@ interface StatusDotProps {
 }
 
 const COLORS: Record<Status, string> = {
-  normal: "var(--accent)",
-  success: "var(--success)",
-  warning: "var(--warning)",
-  danger: "var(--danger)",
-  muted: "var(--text-muted)",
+  normal: "var(--signal)",
+  success: "var(--go)",
+  warning: "var(--hold)",
+  danger: "var(--signal)",
+  muted: "var(--ink-faint)",
 };
 
-export function StatusDot({ status = "normal", pulse, size = 8, className }: StatusDotProps) {
+export function StatusDot({
+  status = "normal",
+  pulse,
+  size = 8,
+  className,
+}: StatusDotProps) {
   return (
     <span
-      className={cn("inline-block rounded-full", pulse && "pulse-soft", className)}
+      className={cn(
+        "inline-block rounded-full",
+        pulse && "blink-signal",
+        className
+      )}
       style={{
         width: size,
         height: size,
         backgroundColor: COLORS[status],
-        boxShadow: `0 0 8px ${COLORS[status]}66`,
       }}
     />
   );

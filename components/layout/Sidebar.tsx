@@ -27,6 +27,7 @@ export function Sidebar() {
   );
 
   const running = planMutation.isPending || simulateMutation.isPending;
+  const error = planMutation.error ?? simulateMutation.error;
 
   const handleRun = async () => {
     const start = performance.now();
@@ -53,101 +54,116 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="flex w-[22rem] shrink-0 flex-col overflow-y-auto border-r border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
+    <aside className="relative flex w-[24rem] shrink-0 flex-col overflow-y-auto border-r-2 border-[var(--ink-rule)] bg-[var(--paper)]">
+      {/* Running header — like a chapter masthead */}
+      <div className="flex items-baseline justify-between border-b border-[var(--ink-rule)] px-7 py-3">
+        <span className="figcap">Brief</span>
+        <span className="pagemark">p. 01 / 04</span>
+      </div>
+
       <div className="flex flex-col gap-9 px-7 py-7">
-        {/* Mission brief */}
-        <Section eyebrow="01 · Mission" title="Active Case">
+        {/* §I — Mission */}
+        <Section index="I" title="Active Pass">
           {activeCase ? (
-            <div className="flex flex-col gap-2.5">
-              <h3 className="serif text-[22px] leading-tight text-[var(--text-primary)]">
+            <div className="flex flex-col gap-3 margin-tick">
+              <h3
+                className="display text-[26px] leading-[1.05] text-[var(--ink)]"
+                style={{ letterSpacing: "-0.018em" }}
+              >
                 {activeCase.name}
               </h3>
-              <p className="serif-italic text-[13px] leading-relaxed text-[var(--text-secondary)]">
-                Pass starts {new Date(activeCase.pass_start_utc).toUTCString().slice(5, 22)}{" "}
-                UTC · est. off-nadir{" "}
-                <span className="text-[var(--text-primary)]">
+              <p className="display-italic text-[13px] leading-relaxed text-[var(--ink-soft)]">
+                {new Date(activeCase.pass_start_utc)
+                  .toUTCString()
+                  .slice(5, 22)}{" "}
+                UTC · {Math.round(
+                  (new Date(activeCase.pass_end_utc).getTime() -
+                    new Date(activeCase.pass_start_utc).getTime()) /
+                    1000
+                )}
+                s window · est. off-nadir{" "}
+                <span className="numeric text-[var(--ink)]">
                   {activeCase.off_nadir_estimate_deg.toFixed(1)}°
                 </span>
-                .
               </p>
-              <div className="mt-1 flex items-center gap-2">
+              <div className="mt-1 flex items-center gap-3">
                 <span
-                  className="rounded-full px-2.5 py-1 text-[10px] uppercase tracking-[0.18em]"
+                  className="border px-2 py-0.5 text-[10px] uppercase tracking-[0.18em]"
                   style={{
                     fontFamily: "var(--font-mono)",
                     color: DIFFICULTY_COLOR[activeCase.difficulty],
-                    backgroundColor: `${DIFFICULTY_COLOR[activeCase.difficulty]}1a`,
-                    border: `1px solid ${DIFFICULTY_COLOR[activeCase.difficulty]}55`,
+                    borderColor: DIFFICULTY_COLOR[activeCase.difficulty],
+                    backgroundColor: "transparent",
                   }}
                 >
                   {DIFFICULTY_LABEL[activeCase.difficulty]}
                 </span>
                 <span
-                  className="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]"
+                  className="text-[10px] tabular-nums text-[var(--ink-mute)]"
                   style={{ fontFamily: "var(--font-mono)" }}
                 >
-                  Weight {activeCase.weight.toFixed(1)}
+                  WEIGHT × {activeCase.weight.toFixed(2)}
                 </span>
               </div>
             </div>
           ) : (
-            <p className="serif-italic text-[13px] text-[var(--text-muted)]">
+            <p className="display-italic text-[14px] text-[var(--ink-mute)]">
               Loading mission parameters…
             </p>
           )}
         </Section>
 
-        <Divider />
-
-        <Section eyebrow="02 · Strategy" title="Tasking Method">
+        {/* §II — Strategy */}
+        <Section index="II" title="Tasking Method">
           <StrategyPicker />
         </Section>
 
-        <Divider />
-
-        <Section eyebrow="03 · Margins" title="Safety Buffers">
+        {/* §III — Margins */}
+        <Section index="III" title="Safety Buffers">
           <ParameterSliders />
         </Section>
 
-        <Divider />
-
-        <Section eyebrow="04 · Execute">
+        {/* §IV — Execute */}
+        <Section index="IV" title="Execute">
           <RunButton onClick={handleRun} loading={running} />
-          {(planMutation.error || simulateMutation.error) && (
-            <p className="mt-3 serif-italic text-[12px] text-[var(--danger)]">
-              {(planMutation.error ?? simulateMutation.error)?.message}
+          {error && (
+            <p
+              className="mt-3 display-italic text-[12px] text-[var(--signal)]"
+            >
+              ERR — {error.message}
             </p>
           )}
         </Section>
+
+        <div
+          className="display-italic mt-2 text-center text-[11px] text-[var(--ink-faint)]"
+        >
+          — end of brief —
+        </div>
       </div>
     </aside>
   );
 }
 
 function Section({
-  eyebrow,
+  index,
   title,
   children,
 }: {
-  eyebrow: string;
-  title?: string;
+  index: string;
+  title: string;
   children: React.ReactNode;
 }) {
   return (
-    <section className="flex flex-col gap-3.5">
-      <div className="flex items-baseline justify-between">
-        <span className="eyebrow">{eyebrow}</span>
-        {title && (
-          <span className="serif-italic text-[12px] text-[var(--text-muted)]">
-            {title}
-          </span>
-        )}
-      </div>
+    <section className="flex flex-col gap-4">
+      <header className="flex items-baseline justify-between border-b-2 border-[var(--ink-rule)] pb-1.5">
+        <span className="figcap text-[var(--ink)]">
+          §&nbsp;{index}
+          <span className="mx-2 text-[var(--ink-thread)]">·</span>
+          {title}
+        </span>
+      </header>
       {children}
     </section>
   );
-}
-
-function Divider() {
-  return <div className="h-px bg-[var(--border-subtle)]" />;
 }

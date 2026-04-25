@@ -1,6 +1,5 @@
 "use client";
 
-import { Check } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import { STRATEGIES } from "@/lib/constants";
 import { cn } from "@/lib/cn";
@@ -10,55 +9,62 @@ export function StrategyPicker() {
   const setStrategy = useAppStore((s) => s.setStrategy);
 
   return (
-    <div className="flex flex-col gap-2">
+    <ul className="flex flex-col">
       {STRATEGIES.map((s, i) => {
         const active = strategy === s.id;
         return (
-          <button
-            key={s.id}
-            type="button"
-            onClick={() => setStrategy(s.id)}
-            className={cn(
-              "lift group flex items-start gap-3 rounded-[var(--radius-md)] border px-4 py-3 text-left transition-colors",
-              active
-                ? "border-[var(--accent)] bg-[var(--accent-soft)]"
-                : "border-[var(--border-subtle)] bg-[var(--bg-primary)] hover:border-[var(--border-strong)]"
-            )}
-          >
-            <span
+          <li key={s.id}>
+            <button
+              type="button"
+              onClick={() => setStrategy(s.id)}
               className={cn(
-                "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors",
+                "lift group flex w-full items-start gap-4 border-t border-[var(--ink-rule)] py-3.5 text-left transition-colors",
+                i === STRATEGIES.length - 1 && "border-b",
                 active
-                  ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-ink)]"
-                  : "border-[var(--border-strong)] bg-transparent"
+                  ? "text-[var(--ink)]"
+                  : "text-[var(--ink-soft)] hover:text-[var(--ink)]"
               )}
             >
-              {active && <Check size={10} strokeWidth={3} />}
-            </span>
-            <div className="flex min-w-0 flex-col gap-0.5">
-              <div className="flex items-baseline gap-2">
-                <span
-                  className="text-[10px] tabular-nums text-[var(--text-muted)]"
-                  style={{ fontFamily: "var(--font-mono)" }}
-                >
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <span
-                  className={cn(
-                    "serif text-[15px] leading-tight",
-                    active ? "text-[var(--text-primary)]" : "text-[var(--text-primary)]"
-                  )}
-                >
-                  {s.label}
+              {/* Index marker — switches to filled square when active */}
+              <span
+                className={cn(
+                  "mt-1 flex h-3.5 w-3.5 shrink-0 items-center justify-center border transition-colors",
+                  active
+                    ? "border-[var(--ink)] bg-[var(--ink)]"
+                    : "border-[var(--ink-soft)] bg-transparent group-hover:border-[var(--ink)]"
+                )}
+              >
+                {active && (
+                  <span
+                    className="block h-1.5 w-1.5 bg-[var(--signal)]"
+                    aria-hidden
+                  />
+                )}
+              </span>
+
+              <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <div className="flex items-baseline justify-between gap-2">
+                  <span
+                    className="display text-[18px] leading-tight"
+                    style={{ letterSpacing: "-0.012em" }}
+                  >
+                    {s.label}
+                  </span>
+                  <span
+                    className="text-[10px] tabular-nums text-[var(--ink-faint)]"
+                    style={{ fontFamily: "var(--font-mono)" }}
+                  >
+                    METHOD {String(i + 1).padStart(2, "0")}
+                  </span>
+                </div>
+                <span className="display-italic text-[13px] leading-snug text-[var(--ink-mute)]">
+                  {s.hint}
                 </span>
               </div>
-              <span className="serif-italic text-[12px] leading-snug text-[var(--text-secondary)]">
-                {s.hint}
-              </span>
-            </div>
-          </button>
+            </button>
+          </li>
         );
       })}
-    </div>
+    </ul>
   );
 }

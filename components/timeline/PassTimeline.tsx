@@ -143,14 +143,14 @@ export function PassTimeline() {
   // Aggregate shutter events into ≤30 contiguous bands. Hundreds of
   // ReferenceArea SVG nodes is a major paint cost on every chart redraw.
   const shutterAreas = useMemo(() => {
-    const sw = result?.plan?.schedule.shutter ?? [];
+    const sw = result?.plan?.schedule.shutters ?? [];
     if (!sw.length) return [];
     const sorted = [...sw].sort((a, b) => a.t_start - b.t_start);
     const merged: { x1: number; x2: number }[] = [];
     const gap = PASS_DURATION_S / 80;
     for (const s of sorted) {
       const x1 = s.t_start;
-      const x2 = s.t_start + Math.max(s.duration, 0.5);
+      const x2 = Math.max(s.t_end, s.t_start + 0.5);
       const last = merged[merged.length - 1];
       if (last && x1 - last.x2 <= gap) {
         last.x2 = Math.max(last.x2, x2);

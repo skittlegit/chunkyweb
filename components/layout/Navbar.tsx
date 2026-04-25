@@ -12,6 +12,13 @@ const NAV_LINKS = [
   { href: "/export", label: "Export" },
 ];
 
+function todayMark() {
+  const d = new Date();
+  return d
+    .toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+    .toUpperCase();
+}
+
 export function Navbar() {
   const pathname = usePathname();
   const { data: cases } = useCases();
@@ -19,30 +26,60 @@ export function Navbar() {
   const selectCase = useAppStore((s) => s.selectCase);
 
   return (
-    <header className="relative flex h-16 shrink-0 items-center justify-between gap-8 border-b border-[var(--border-subtle)] bg-[var(--bg-primary)] px-8">
-      {/* Wordmark */}
-      <div className="flex items-center gap-5">
-        <Link href="/" className="flex items-baseline gap-2">
-          <span
-            className="serif text-[26px] leading-none tracking-tight text-[var(--text-primary)]"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
-            Chunky
-          </span>
-          <span className="serif-italic text-[15px] leading-none text-[var(--accent)]">
-            web
-          </span>
-        </Link>
-        <span
-          className="hidden text-[10px] uppercase tracking-[0.22em] text-[var(--text-muted)] md:inline"
-          style={{ fontFamily: "var(--font-mono)" }}
-        >
-          Orbital Imaging Console
-        </span>
+    <header className="relative shrink-0 border-b-2 border-[var(--ink-rule)] bg-[var(--paper)]">
+      {/* Top dateline */}
+      <div className="flex items-center justify-between border-b border-[var(--ink-rule)] px-8 py-1.5">
+        <span className="figcap">VOL · XII · NO · 04</span>
+        <span className="figcap">{todayMark()} · TRANSMISSION DAILY</span>
+        <span className="figcap">PRINTED IN ORBIT</span>
       </div>
 
-      {/* Case picker (pill tabs) */}
-      <nav className="hidden items-center gap-1 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-secondary)] p-1 lg:flex">
+      {/* Masthead */}
+      <div className="flex items-end justify-between gap-8 px-8 pb-3 pt-4">
+        {/* Wordmark — display serif */}
+        <Link href="/" className="group flex items-baseline gap-3">
+          <span
+            className="display leading-none text-[var(--ink)]"
+            style={{ fontSize: 44, letterSpacing: "-0.025em" }}
+          >
+            Chunky<span className="text-[var(--signal)]">·</span>web
+          </span>
+          <span className="display-italic text-[15px] text-[var(--ink-soft)]">
+            Mission Control
+          </span>
+        </Link>
+
+        {/* Routes — printed nav with hairline underline on active */}
+        <nav className="flex items-end gap-6">
+          {NAV_LINKS.map((l) => {
+            const active = pathname === l.href;
+            return (
+              <Link
+                key={l.href}
+                href={l.href}
+                className={cn(
+                  "lift relative pb-1 text-[12px] uppercase tracking-[0.18em] transition-colors",
+                  active
+                    ? "text-[var(--ink)]"
+                    : "text-[var(--ink-mute)] hover:text-[var(--ink-soft)]"
+                )}
+                style={{ fontFamily: "var(--font-mono)" }}
+              >
+                {l.label}
+                {active && (
+                  <span
+                    aria-hidden
+                    className="absolute -bottom-px left-0 right-0 h-[2px] bg-[var(--signal)]"
+                  />
+                )}
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
+
+      {/* Subline rule + case selector */}
+      <div className="flex items-stretch border-t border-[var(--ink-rule)]">
         {(cases ?? []).map((c, i) => {
           const active = c.id === selectedCaseId;
           return (
@@ -51,49 +88,37 @@ export function Navbar() {
               type="button"
               onClick={() => selectCase(c.id)}
               className={cn(
-                "lift relative rounded-full px-3.5 py-1.5 text-[11px] tracking-wide transition-colors",
+                "lift group relative flex flex-1 items-center gap-3 border-r border-[var(--ink-rule)] px-5 py-2.5 text-left transition-colors",
                 active
-                  ? "bg-[var(--accent)] text-[var(--accent-ink)]"
-                  : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                  ? "bg-[var(--ink)] text-[var(--paper)]"
+                  : "bg-[var(--paper)] text-[var(--ink-soft)] hover:bg-[var(--paper-onion)] hover:text-[var(--ink)]"
               )}
-              style={{ fontFamily: "var(--font-mono)" }}
             >
-              <span className="mr-2 text-[9px] opacity-70">
-                {String(i + 1).padStart(2, "0")}
+              <span
+                className={cn(
+                  "text-[10px] tabular-nums",
+                  active ? "text-[var(--paper-margin)]" : "text-[var(--ink-faint)]"
+                )}
+                style={{ fontFamily: "var(--font-mono)" }}
+              >
+                §{String(i + 1).padStart(2, "0")}
               </span>
-              {c.name}
-            </button>
-          );
-        })}
-      </nav>
-
-      {/* Routes */}
-      <nav className="flex items-center gap-1">
-        {NAV_LINKS.map((l) => {
-          const active = pathname === l.href;
-          return (
-            <Link
-              key={l.href}
-              href={l.href}
-              className={cn(
-                "relative px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] transition-colors",
-                active
-                  ? "text-[var(--text-primary)]"
-                  : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
-              )}
-              style={{ fontFamily: "var(--font-mono)" }}
-            >
-              {l.label}
+              <span
+                className="display text-[15px] leading-none"
+                style={{ letterSpacing: "-0.01em" }}
+              >
+                {c.name}
+              </span>
               {active && (
                 <span
                   aria-hidden
-                  className="absolute -bottom-[1px] left-3 right-3 h-[2px] rounded-full bg-[var(--accent)]"
+                  className="absolute right-3 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-[var(--signal)] blink-signal"
                 />
               )}
-            </Link>
+            </button>
           );
         })}
-      </nav>
+      </div>
     </header>
   );
 }

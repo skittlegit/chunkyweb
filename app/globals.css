@@ -1,171 +1,262 @@
 @import "tailwindcss";
 
 /* ============================================================
-   HALCYON — QUIET COSMONAUT
-   Refined modernist orbital console.
-   Performance-first: solid backgrounds, no blend modes,
-   no fixed attachments, no infinite background animations.
+   MISSION CONTROL · 1968
+   A printed engineering-journal aesthetic for an orbital console.
+   Cream paper, deep navy ink, NASA worm-orange as the only signal.
+   No dark mode. No gradients. No glows. Sharp rules. Oldstyle figures.
+
+   Performance principles preserved from earlier iterations:
+   - Solid background-color only (NO fixed-attachment, NO blend modes,
+     NO infinite background animations, NO SVG noise tiles).
+   - At most one cheap CSS-gradient layer for paper grain.
+   - Motion is single-fire, GPU-only transforms, opt-out via reduced-motion.
    ============================================================ */
 
 :root {
-  /* Surfaces — deep oxide ink, slightly cool */
-  --bg-primary: #0d1014;
-  --bg-secondary: #14181d;
-  --bg-tertiary: #1b2027;
-  --bg-elevated: #1f252d;
-  --bg-hover: #252c35;
-  --bg-paper: #f5efdf;
+  /* Paper & ink */
+  --paper:        #f3ebd9;   /* warm cream, slight yellow shift */
+  --paper-edge:   #ebe1cb;   /* deeper card surface */
+  --paper-deep:   #e3d7bb;   /* sunken / inset surface */
+  --paper-onion:  #f8f3e3;   /* lifted / hover surface */
+  --paper-margin: #ddd0b0;   /* page margin tone */
 
-  /* Borders — hairline, two stops */
-  --border-subtle: #232830;
-  --border-strong: #353c46;
-  --border-active: #d8c896;
+  /* Ink scale — deep navy, near-black */
+  --ink:          #161a2c;
+  --ink-soft:     #2c3247;
+  --ink-mute:     #5a607a;
+  --ink-faint:    #8c8a78;
+  --ink-rule:     #2c3247;
+  --ink-thread:   #c8bd9c;   /* hairline / dotted rules */
 
-  /* Text — bone, ash, slate */
-  --text-primary: #ecead4;
-  --text-secondary: #9aa0ad;
-  --text-muted: #5e6470;
-  --text-mono: #c4c8d2;
-  --text-ink: #18130d;
+  /* Single signal — NASA worm orange */
+  --signal:       #d94c1f;
+  --signal-deep:  #a8350f;
+  --signal-soft:  rgba(217, 76, 31, 0.10);
+  --signal-thread:rgba(217, 76, 31, 0.30);
 
-  /* Signals — single phosphor-lime accent + alarm + amber */
-  --accent: #c6f24e;
-  --accent-soft: rgba(198, 242, 78, 0.14);
-  --accent-glow: rgba(198, 242, 78, 0.55);
-  --accent-ink: #1e2700;
+  /* Secondary signals — restrained */
+  --go:           #2f6f4f;   /* deep telegraph green for "go" */
+  --go-soft:      rgba(47, 111, 79, 0.10);
+  --hold:         #b6892c;   /* burnt amber, used very sparingly */
+  --hold-soft:    rgba(182, 137, 44, 0.12);
 
-  --success: #c6f24e;
-  --success-dim: rgba(198, 242, 78, 0.14);
-  --warning: #f4b942;
-  --warning-dim: rgba(244, 185, 66, 0.14);
-  --danger: #ff6b5b;
-  --danger-dim: rgba(255, 107, 91, 0.14);
+  /* Map colors — restrained, paper-friendly */
+  --aoi-stroke:   #d94c1f;
+  --aoi-fill:     rgba(217, 76, 31, 0.06);
+  --footprint-valid:   rgba(47, 111, 79, 0.20);
+  --footprint-invalid: rgba(217, 76, 31, 0.16);
+  --orbit-track:  #2c3247;
+  --sat-marker:   #d94c1f;
 
-  /* Map */
-  --aoi-fill: rgba(198, 242, 78, 0.06);
-  --aoi-stroke: #c6f24e;
-  --footprint-valid: rgba(198, 242, 78, 0.28);
-  --footprint-invalid: rgba(255, 107, 91, 0.22);
-  --orbit-track: #d8c896;
-  --sat-marker: #ff6b5b;
+  /* Geometry — sharp, printed */
+  --rule-thin: 1px;
+  --rule-bold: 2px;
+  --radius-tight: 2px;
 
-  /* Soft modernist radii */
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 14px;
-  --radius-pill: 999px;
+  /* Typography */
+  --font-display-stack: var(--font-display), "Newsreader", "Source Serif 4", "PT Serif", Georgia, serif;
+  --font-serif-stack:   var(--font-serif), "Source Serif 4", "PT Serif", "Iowan Old Style", Georgia, serif;
+  --font-mono-stack:    var(--font-mono), "IBM Plex Mono", "JetBrains Mono", ui-monospace, monospace;
 }
 
+/* Tailwind v4 theme tokens */
 @theme inline {
-  --color-bg-primary: var(--bg-primary);
-  --color-bg-secondary: var(--bg-secondary);
-  --color-bg-tertiary: var(--bg-tertiary);
-  --color-bg-elevated: var(--bg-elevated);
-  --color-bg-hover: var(--bg-hover);
-  --color-bg-paper: var(--bg-paper);
+  --color-paper:        var(--paper);
+  --color-paper-edge:   var(--paper-edge);
+  --color-paper-deep:   var(--paper-deep);
+  --color-paper-onion:  var(--paper-onion);
+  --color-paper-margin: var(--paper-margin);
 
-  --color-border-subtle: var(--border-subtle);
-  --color-border-strong: var(--border-strong);
-  --color-border-active: var(--border-active);
+  --color-ink:        var(--ink);
+  --color-ink-soft:   var(--ink-soft);
+  --color-ink-mute:   var(--ink-mute);
+  --color-ink-faint:  var(--ink-faint);
+  --color-ink-rule:   var(--ink-rule);
+  --color-ink-thread: var(--ink-thread);
 
-  --color-text-primary: var(--text-primary);
-  --color-text-secondary: var(--text-secondary);
-  --color-text-muted: var(--text-muted);
-  --color-text-mono: var(--text-mono);
-  --color-text-ink: var(--text-ink);
+  --color-signal:     var(--signal);
+  --color-signal-deep:var(--signal-deep);
+  --color-go:         var(--go);
+  --color-hold:       var(--hold);
 
-  --color-accent: var(--accent);
-  --color-success: var(--success);
-  --color-warning: var(--warning);
-  --color-danger: var(--danger);
-  --color-orbit: var(--orbit-track);
-  --color-satellite: var(--sat-marker);
-
-  --font-display: var(--font-fraunces), "Fraunces", "Cormorant Garamond", Georgia, serif;
-  --font-body: var(--font-ibm-plex-sans), "IBM Plex Sans", "DM Sans", sans-serif;
-  --font-mono: var(--font-jetbrains-mono), "JetBrains Mono", "Fira Code", monospace;
+  --font-display: var(--font-display-stack);
+  --font-serif:   var(--font-serif-stack);
+  --font-mono:    var(--font-mono-stack);
 }
 
 /* ============================================================
-   Base — solid, performant
+   Base — paper with a single subtle dotted-grid layer
    ============================================================ */
 
 html, body {
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
-  font-family: var(--font-body);
-  font-feature-settings: "ss01", "cv11";
+  background-color: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-serif-stack);
+  font-feature-settings: "onum" 1, "lnum" 0, "kern" 1, "liga" 1;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
-.tabular-nums,
-[class*="font-display"],
-[class*="font-mono"] {
-  font-variant-numeric: tabular-nums;
+/* Paper "grain" — a single static radial-dot pattern on the body.
+   Pure CSS, NOT fixed-attached, NOT animated, very cheap to paint. */
+body {
+  background-image:
+    radial-gradient(circle at 50% 50%, rgba(22, 26, 44, 0.06) 0.5px, transparent 0.6px);
+  background-size: 18px 18px;
+  background-position: 0 0;
 }
 
 ::selection {
-  background: var(--accent);
-  color: var(--accent-ink);
+  background: var(--ink);
+  color: var(--paper);
 }
 
-/* Scrollbars */
-::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
-  border-radius: var(--radius-pill);
-  border: 2px solid var(--bg-primary);
+/* Scrollbars — flat, paper-toned */
+::-webkit-scrollbar { width: 12px; height: 12px; }
+::-webkit-scrollbar-track {
+  background: var(--paper-deep);
+  border-left: 1px solid var(--paper-margin);
 }
-::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+::-webkit-scrollbar-thumb {
+  background: var(--ink-mute);
+  border: 3px solid var(--paper-deep);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--ink-soft); }
 
 /* ============================================================
-   Leaflet
+   Typography utilities
    ============================================================ */
 
-.leaflet-container {
-  background: var(--bg-primary) !important;
-  font-family: var(--font-mono);
+.display {
+  font-family: var(--font-display-stack);
+  font-weight: 500;
+  letter-spacing: -0.018em;
 }
-.leaflet-popup-content-wrapper,
-.leaflet-popup-tip {
-  background: var(--bg-elevated) !important;
-  color: var(--text-primary) !important;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-md) !important;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+.display-italic {
+  font-family: var(--font-display-stack);
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.005em;
 }
-.leaflet-control-attribution {
-  background: rgba(13, 16, 20, 0.7) !important;
-  color: var(--text-muted) !important;
-  font-size: 9px !important;
-  letter-spacing: 0.04em;
-  border-radius: var(--radius-sm) !important;
+.serif {
+  font-family: var(--font-serif-stack);
 }
-.leaflet-control-attribution a { color: var(--text-secondary) !important; }
-.leaflet-control-zoom a {
-  background: var(--bg-elevated) !important;
-  color: var(--text-primary) !important;
-  border-color: var(--border-subtle) !important;
-  border-radius: var(--radius-sm) !important;
-  font-family: var(--font-mono);
+.serif-italic {
+  font-family: var(--font-serif-stack);
+  font-style: italic;
 }
-.leaflet-control-zoom a:hover {
-  background: var(--bg-hover) !important;
-  color: var(--accent) !important;
+.numeric {
+  font-family: var(--font-display-stack);
+  font-weight: 500;
+  font-variant-numeric: lining-nums tabular-nums;
+  font-feature-settings: "lnum" 1, "tnum" 1;
+  letter-spacing: -0.025em;
+}
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* "FIG 01 —" style printed caption */
+.figcap {
+  font-family: var(--font-mono-stack);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+}
+/* small italic print sub-caption */
+.subcap {
+  font-family: var(--font-display-stack);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 13px;
+  color: var(--ink-soft);
+  letter-spacing: 0.005em;
+}
+/* mono micro-label — printed legend keys */
+.mono-key {
+  font-family: var(--font-mono-stack);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+}
+/* page number / running-head ornament */
+.pagemark {
+  font-family: var(--font-display-stack);
+  font-style: italic;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  color: var(--ink-faint);
 }
 
 /* ============================================================
-   Range inputs — slim minimalist
+   Surfaces — printed cards, no shadows, sharp ink rules
+   ============================================================ */
+
+.sheet {
+  background: var(--paper-edge);
+  border: var(--rule-thin) solid var(--ink-rule);
+  border-radius: var(--radius-tight);
+  position: relative;
+}
+.sheet-bold {
+  background: var(--paper-edge);
+  border: var(--rule-bold) solid var(--ink-rule);
+  border-radius: var(--radius-tight);
+  position: relative;
+}
+.sheet-inset {
+  background: var(--paper-deep);
+  border: var(--rule-thin) solid var(--paper-margin);
+  border-radius: var(--radius-tight);
+}
+
+/* Optional decorative double-rule (printed-journal feel) */
+.double-rule-b {
+  box-shadow: inset 0 -3px 0 var(--paper-edge), inset 0 -4px 0 var(--ink-rule);
+}
+
+/* Hairline horizontal rule used as section divider */
+.hr-thin {
+  height: 1px;
+  background: var(--ink-rule);
+  border: 0;
+}
+.hr-double {
+  height: 4px;
+  background:
+    linear-gradient(var(--ink-rule), var(--ink-rule)) top / 100% 1px no-repeat,
+    linear-gradient(var(--ink-rule), var(--ink-rule)) bottom / 100% 1px no-repeat;
+  border: 0;
+}
+
+/* Decorative left margin tick (looks like a printed margin guide) */
+.margin-tick {
+  position: relative;
+}
+.margin-tick::before {
+  content: "";
+  position: absolute;
+  left: -16px;
+  top: 0.45em;
+  width: 8px;
+  height: 1px;
+  background: var(--ink-rule);
+}
+
+/* ============================================================
+   Form elements — sliders, inputs
    ============================================================ */
 
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
-  height: 3px;
-  background: var(--bg-tertiary);
-  border-radius: var(--radius-pill);
+  height: 1px;
+  background: var(--ink-rule);
   outline: none;
 }
 input[type="range"]::-webkit-slider-thumb {
@@ -173,127 +264,126 @@ input[type="range"]::-webkit-slider-thumb {
   appearance: none;
   width: 14px;
   height: 14px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
   border-radius: 50%;
-  background: var(--accent);
   cursor: pointer;
-  border: 2px solid var(--bg-primary);
-  box-shadow: 0 0 0 1px var(--accent), 0 0 12px var(--accent-glow);
-  transition: transform 0.18s cubic-bezier(.2,.7,.2,1);
+  transition: transform 0.18s cubic-bezier(.2,.7,.2,1), background-color 0.18s;
 }
 input[type="range"]::-webkit-slider-thumb:hover {
   transform: scale(1.2);
+  background: var(--signal);
+  border-color: var(--signal-deep);
 }
 input[type="range"]::-moz-range-thumb {
-  width: 14px; height: 14px;
+  width: 14px;
+  height: 14px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
   border-radius: 50%;
-  background: var(--accent);
-  border: 2px solid var(--bg-primary);
   cursor: pointer;
 }
 
 /* ============================================================
-   Typography utilities
+   Map (Leaflet) — paper-friendly
    ============================================================ */
 
-.serif {
-  font-family: var(--font-display);
-  letter-spacing: -0.015em;
+.leaflet-container {
+  background: var(--paper-deep) !important;
+  font-family: var(--font-mono-stack);
 }
-.serif-italic {
-  font-family: var(--font-display);
-  font-style: italic;
-  letter-spacing: -0.005em;
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: var(--paper) !important;
+  color: var(--ink) !important;
+  border: 1px solid var(--ink-rule) !important;
+  border-radius: var(--radius-tight) !important;
+  box-shadow: none !important;
+  font-family: var(--font-mono-stack);
 }
-.numeric-display {
-  font-family: var(--font-display);
+.leaflet-popup-content {
+  font-family: var(--font-mono-stack);
+  font-size: 11px;
+}
+.leaflet-control-attribution {
+  background: var(--paper) !important;
+  color: var(--ink-mute) !important;
+  font-size: 9px !important;
+  letter-spacing: 0.04em;
+  border: 1px solid var(--paper-margin) !important;
+  border-radius: 0 !important;
+}
+.leaflet-control-attribution a { color: var(--ink-soft) !important; }
+.leaflet-control-zoom a {
+  background: var(--paper) !important;
+  color: var(--ink) !important;
+  border: 1px solid var(--ink-rule) !important;
+  border-radius: 0 !important;
+  font-family: var(--font-mono-stack);
   font-weight: 500;
-  letter-spacing: -0.035em;
-  font-variant-numeric: tabular-nums lining-nums;
-  font-feature-settings: "ss01";
 }
-.micro-label {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--text-muted);
+.leaflet-control-zoom a:hover {
+  background: var(--paper-onion) !important;
+  color: var(--signal) !important;
 }
-.eyebrow {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--text-secondary);
+
+/* Recharts polish — paper palette */
+.recharts-cartesian-grid line {
+  stroke: var(--ink-thread);
+  stroke-dasharray: 1 3;
+}
+.recharts-cartesian-axis-line { stroke: var(--ink-rule); }
+.recharts-default-tooltip {
+  background: var(--paper) !important;
+  border: 1px solid var(--ink-rule) !important;
+  border-radius: var(--radius-tight) !important;
+  box-shadow: none !important;
+  color: var(--ink) !important;
+  font-family: var(--font-mono-stack) !important;
 }
 
 /* ============================================================
-   Surfaces & cards
+   Motion — one-shot entrance, calm pulse, hover lift
    ============================================================ */
 
-.card {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-}
-.card-elevated {
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 1px 0 rgba(255,255,255,0.02) inset, 0 8px 24px rgba(0,0,0,0.25);
-}
-
-/* Subtle vignette on the app shell — single CSS gradient, no animation */
-.app-vignette {
-  background:
-    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(198, 242, 78, 0.04), transparent 70%),
-    radial-gradient(ellipse 60% 60% at 100% 100%, rgba(216, 200, 150, 0.04), transparent 70%);
-}
-
-/* ============================================================
-   Motion — restrained, single-fire entrance only
-   ============================================================ */
-
-@keyframes rise {
-  from { opacity: 0; transform: translateY(6px); }
+@keyframes ink-rise {
+  from { opacity: 0; transform: translateY(4px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.rise   { animation: rise 0.6s cubic-bezier(.2,.7,.2,1) both; }
-.rise-1 { animation: rise 0.6s cubic-bezier(.2,.7,.2,1) 0.04s both; }
-.rise-2 { animation: rise 0.6s cubic-bezier(.2,.7,.2,1) 0.12s both; }
-.rise-3 { animation: rise 0.6s cubic-bezier(.2,.7,.2,1) 0.20s both; }
-.rise-4 { animation: rise 0.6s cubic-bezier(.2,.7,.2,1) 0.28s both; }
+.ink-rise   { animation: ink-rise 0.55s cubic-bezier(.2,.7,.2,1) both; }
+.ink-rise-1 { animation: ink-rise 0.55s cubic-bezier(.2,.7,.2,1) 0.05s both; }
+.ink-rise-2 { animation: ink-rise 0.55s cubic-bezier(.2,.7,.2,1) 0.13s both; }
+.ink-rise-3 { animation: ink-rise 0.55s cubic-bezier(.2,.7,.2,1) 0.21s both; }
+.ink-rise-4 { animation: ink-rise 0.55s cubic-bezier(.2,.7,.2,1) 0.29s both; }
 
-@keyframes pulse-soft {
-  0%, 100% { opacity: 1; }
-  50%      { opacity: 0.45; }
+/* Cursor / signal blink — used ONLY on a single element */
+@keyframes blink-signal {
+  0%, 60% { opacity: 1; }
+  61%, 100% { opacity: 0.25; }
 }
-.pulse-soft { animation: pulse-soft 2.4s ease-in-out infinite; }
+.blink-signal { animation: blink-signal 1.6s steps(1, end) infinite; }
 
-/* Hover micro-lift */
+@keyframes hairline-sweep {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+.hairline-sweep {
+  transform-origin: left;
+  animation: hairline-sweep 0.8s cubic-bezier(.2,.7,.2,1) both;
+}
+
 .lift {
-  transition: transform 0.2s cubic-bezier(.2,.7,.2,1),
-              border-color 0.2s,
-              background-color 0.2s;
+  transition: transform 0.18s cubic-bezier(.2,.7,.2,1),
+              border-color 0.18s,
+              background-color 0.18s,
+              color 0.18s;
 }
 .lift:hover { transform: translateY(-1px); }
 
 @media (prefers-reduced-motion: reduce) {
-  .rise, .rise-1, .rise-2, .rise-3, .rise-4,
-  .pulse-soft, .lift { animation: none; transition: none; }
-}
-
-/* ============================================================
-   Recharts polish — match palette
-   ============================================================ */
-
-.recharts-cartesian-grid line {
-  stroke: var(--border-subtle);
-}
-.recharts-default-tooltip {
-  background: var(--bg-elevated) !important;
-  border: 1px solid var(--border-strong) !important;
-  border-radius: var(--radius-md) !important;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  .ink-rise, .ink-rise-1, .ink-rise-2, .ink-rise-3, .ink-rise-4,
+  .blink-signal, .hairline-sweep, .lift {
+    animation: none !important;
+    transition: none !important;
+  }
 }

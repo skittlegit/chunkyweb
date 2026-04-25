@@ -44,15 +44,20 @@ export interface AttitudeSample {
 
 export interface ShutterWindow {
   t_start: number;
+  t_end: number;
+  /** Convenience field added by api adapter: t_end - t_start. */
   duration: number;
+  /** Optional polygon footprint (lon,lat) added by adapter. */
+  footprint?: [number, number][];
 }
 
 export interface Schedule {
-  objective: string;
+  objective?: string;
   attitude: AttitudeSample[];
-  shutter: ShutterWindow[];
+  shutters: ShutterWindow[];
   notes?: string;
   target_hints_llh?: { lat_deg: number; lon_deg: number }[];
+  meta?: Record<string, unknown>;
 }
 
 export type TileStatus =

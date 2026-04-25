@@ -11,11 +11,6 @@ import { Copy, Download, Check } from "lucide-react";
 function buildPython(
   cases: { id: string; tle1: string; tle2: string; schedule: unknown }[]
 ) {
-  const tleMap: Record<string, string> = {};
-  for (const c of cases) {
-    tleMap[c.id] = JSON.stringify(c.schedule, null, 2);
-  }
-
   const branches = cases
     .map(
       (c) => `    if tle_line1.strip() == ${JSON.stringify(c.tle1.trim())}:
@@ -81,43 +76,76 @@ export default function ExportPage() {
   const missing = (caseCfgs ?? []).filter((c) => !results[c.id]?.plan);
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden">
+    <div className="flex h-screen flex-col overflow-hidden bg-[var(--paper)] text-[var(--ink)]">
       <Navbar />
-      <main className="flex-1 overflow-y-auto p-4">
-        <div className="mx-auto flex max-w-5xl flex-col gap-4">
-          <header className="flex flex-col gap-1">
+      <main className="flex-1 overflow-y-auto">
+        <div className="mx-auto flex max-w-[1100px] flex-col gap-8 px-8 py-7">
+          <div className="flex items-baseline justify-between border-b border-[var(--ink-rule)] pb-2">
+            <span className="figcap">
+              Section&nbsp;C
+              <span className="mx-2 text-[var(--ink-thread)]">·</span>
+              Export
+            </span>
+            <span className="pagemark">FOLIO 03</span>
+          </div>
+
+          <header className="flex flex-col gap-2 border-b-2 border-[var(--ink-rule)] pb-5">
+            <span className="figcap">Submission</span>
             <h1
-              className="text-lg font-semibold tracking-[0.08em] text-[var(--text-primary)]"
-              style={{ fontFamily: "var(--font-display)" }}
+              className="display text-[40px] leading-[1.05] text-[var(--ink)]"
+              style={{ letterSpacing: "-0.025em" }}
             >
-              EXPORT SUBMISSION
+              Type the schedules to plate.
             </h1>
-            <p className="text-xs text-[var(--text-muted)]">
-              Generates a `my_submission.py` file embedding the schedules for
-              each planned case.
+            <p className="display-italic text-[15px] text-[var(--ink-soft)]">
+              Generates a single{" "}
+              <span style={{ fontFamily: "var(--font-mono)" }}>
+                my_submission.py
+              </span>{" "}
+              file embedding the schedules for each planned case.
             </p>
           </header>
 
           {missing.length > 0 && (
-            <div className="rounded-sm border border-[var(--warning)]/40 bg-[var(--warning-dim)] p-3 text-xs text-[var(--text-primary)]">
-              <strong className="text-[var(--warning)]">Heads up:</strong> the
-              following cases haven&apos;t been planned yet — they won&apos;t be
-              embedded:{" "}
-              <span style={{ fontFamily: "var(--font-mono)" }}>
-                {missing.map((c) => c.id).join(", ")}
-              </span>
+            <div
+              className="border-y-2 px-5 py-3"
+              style={{
+                borderColor: "var(--hold)",
+                backgroundColor: "var(--hold-soft)",
+              }}
+            >
+              <p className="display-italic text-[13px] text-[var(--ink)]">
+                <span
+                  className="mr-2 text-[10px] uppercase tracking-[0.18em]"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    color: "var(--hold)",
+                  }}
+                >
+                  Hold —
+                </span>
+                The following cases have not been planned yet and will not be
+                embedded:{" "}
+                <span style={{ fontFamily: "var(--font-mono)" }}>
+                  {missing.map((c) => c.id).join(", ")}
+                </span>
+              </p>
             </div>
           )}
 
           <Panel
-            title="my_submission.py"
-            subtitle={`${ready.length} case(s) embedded`}
+            figure="FIG 01"
+            caption="my_submission.py"
+            description={`${ready.length} case(s) embedded`}
+            marginalia="plate i"
+            bold
             actions={
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={copy}
-                  className="flex items-center gap-1.5 rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-tertiary)] px-3 py-1 text-[10px] uppercase tracking-wider text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-hover)]"
+                  className="flex items-center gap-1.5 border border-[var(--ink)] bg-transparent px-3 py-1.5 text-[10px] uppercase tracking-[0.18em] text-[var(--ink)] transition-colors hover:bg-[var(--ink)] hover:text-[var(--paper)]"
+                  style={{ fontFamily: "var(--font-mono)" }}
                 >
                   {copied ? <Check size={11} /> : <Copy size={11} />}
                   {copied ? "Copied" : "Copy"}
@@ -126,7 +154,8 @@ export default function ExportPage() {
                   type="button"
                   onClick={download}
                   disabled={ready.length === 0}
-                  className="flex items-center gap-1.5 rounded-sm border border-[var(--accent-primary)] bg-[var(--accent-primary)] px-3 py-1 text-[10px] uppercase tracking-wider text-white transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="flex items-center gap-1.5 border-2 border-[var(--ink)] bg-[var(--ink)] px-3 py-1.5 text-[10px] uppercase tracking-[0.18em] text-[var(--paper)] transition-colors hover:border-[var(--signal-deep)] hover:bg-[var(--signal)] disabled:cursor-not-allowed disabled:border-[var(--paper-margin)] disabled:bg-[var(--paper-deep)] disabled:text-[var(--ink-faint)]"
+                  style={{ fontFamily: "var(--font-mono)" }}
                 >
                   <Download size={11} />
                   Download
@@ -135,7 +164,7 @@ export default function ExportPage() {
             }
           >
             <pre
-              className="max-h-[60vh] overflow-auto whitespace-pre-wrap rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-primary)] p-3 text-[11px] leading-relaxed text-[var(--text-mono)]"
+              className="max-h-[60vh] overflow-auto whitespace-pre-wrap border border-[var(--ink-rule)] bg-[var(--paper-onion)] p-4 text-[11px] leading-relaxed text-[var(--ink)]"
               style={{ fontFamily: "var(--font-mono)" }}
             >
               {code}
