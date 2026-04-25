@@ -24,15 +24,15 @@ export const DARK_TILE_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; CARTO';
 
 // ============================================================
-// Palette — Subterranean Lab
+// Palette — Ember Atelier
 // ============================================================
 
 export const TILE_STATUS_COLOR: Record<TileStatus, string> = {
-  imaged:             "#79e0a3", // sage go
-  skipped_saturation: "#ff8a5c", // coral warn
-  skipped_time:       "#5d6483", // muted
-  unreachable:        "#ff5f7e", // hot pink danger
-  pending:            "#3a4159", // line-loud
+  imaged:             "#b3d97a", // lime-sage go
+  skipped_saturation: "#ffc857", // amber warn
+  skipped_time:       "#6e6452", // muted warm
+  unreachable:        "#f43965", // magenta-rose danger
+  pending:            "#524940", // line-loud
 };
 
 export const TILE_STATUS_LABEL: Record<TileStatus, string> = {
@@ -44,16 +44,16 @@ export const TILE_STATUS_LABEL: Record<TileStatus, string> = {
 };
 
 export const WHEEL_COLORS: [string, string, string, string] = [
-  "#d8f76b", // phosphor
-  "#ff8a5c",
-  "#7cd5ff",
-  "#79e0a3",
+  "#ff8a3d", // ember
+  "#ffc857",
+  "#6cc7b8",
+  "#b3d97a",
 ];
 
 export const DIFFICULTY_COLOR: Record<"easy" | "moderate" | "hard", string> = {
-  easy:     "#79e0a3",
-  moderate: "#ff8a5c",
-  hard:     "#ff5f7e",
+  easy:     "#b3d97a",
+  moderate: "#ffc857",
+  hard:     "#f43965",
 };
 
 export const DIFFICULTY_LABEL: Record<"easy" | "moderate" | "hard", string> = {

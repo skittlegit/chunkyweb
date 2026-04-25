@@ -1,14 +1,14 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import {
   CircleMarker,
   MapContainer,
   Polygon,
   Polyline,
-  Popup,
   TileLayer,
   Tooltip,
+  useMap,
 } from "react-leaflet";
 import L from "leaflet";
 import { useCases } from "@/hooks/useCases";
@@ -26,10 +26,9 @@ import {
 import type { TileInfo, EphemerisPoint } from "@/lib/types";
 
 // Hex literals — Leaflet writes these straight into SVG `stroke`.
-const PHOS = "#d8f76b";
-const WARN = "#ff8a5c";
-const FG_FAINT = "#5d6483";
-const FG_MUTE = "#9aa1bb";
+const PHOS = "#ff8a3d";
+const FG_FAINT = "#6e6452";
+const FG_MUTE = "#a89c84";
 
 type IconDefaultPrototype = L.Icon.Default & { _getIconUrl?: () => string };
 delete (L.Icon.Default.prototype as IconDefaultPrototype)._getIconUrl;
@@ -46,18 +45,30 @@ export default function CoverageMapInner() {
   const tiles = result?.plan?.tiles;
   const imagingWindow = result?.plan?.diagnostics.imaging_window_s;
 
+  // Cap polyline density — Leaflet stores every vertex as an SVG path
+  // segment, so dense ephemeris (>200 pts) is wasteful and a memory risk.
   const orbitTrack = useMemo(() => {
     if (!ephemeris) return [] as [number, number][];
-    return ephemeris.points.map(
-      (p) => [p.lat_deg, p.lon_deg] as [number, number]
-    );
+    const pts = ephemeris.points;
+    const stride = Math.max(1, Math.ceil(pts.length / 200));
+    const out: [number, number][] = [];
+    for (let i = 0; i < pts.length; i += stride) {
+      out.push([pts[i].lat_deg, pts[i].lon_deg]);
+    }
+    return out;
   }, [ephemeris]);
 
   const insideTrack = useMemo(() => {
     if (!ephemeris || !imagingWindow) return [] as [number, number][];
-    return ephemeris.points
-      .filter((p) => p.t >= imagingWindow[0] && p.t <= imagingWindow[1])
-      .map((p) => [p.lat_deg, p.lon_deg] as [number, number]);
+    const filtered = ephemeris.points.filter(
+      (p) => p.t >= imagingWindow[0] && p.t <= imagingWindow[1]
+    );
+    const stride = Math.max(1, Math.ceil(filtered.length / 200));
+    const out: [number, number][] = [];
+    for (let i = 0; i < filtered.length; i += stride) {
+      out.push([filtered[i].lat_deg, filtered[i].lon_deg]);
+    }
+    return out;
   }, [ephemeris, imagingWindow]);
 
   return (
@@ -142,8 +153,9 @@ export default function CoverageMapInner() {
         />
       ))}
 
-      {/* Satellite is its OWN subscriber — parent does NOT subscribe to
-          currentTime, so MapContainer never re-renders during playback. */}
+      {/* Satellite — imperative Leaflet marker. Mounts ONCE, then
+          subscribes to currentTime and calls `marker.setLatLng()`
+          directly. No React reconciliation during playback. */}
       {ephemeris && ephemeris.points.length > 0 && (
         <SatelliteMarker points={ephemeris.points} />
       )}
@@ -152,46 +164,57 @@ export default function CoverageMapInner() {
 }
 
 /* --------------------------------------------------------------
-   Satellite — subscribes to currentTime independently. Only this
-   one CircleMarker re-renders on every RAF tick.
+   Satellite — imperative. Creates one Leaflet circleMarker on
+   mount, subscribes to the timeline store outside React, and
+   mutates the marker's lat/lng directly. The component renders
+   nothing and never re-renders.
    -------------------------------------------------------------- */
 function SatelliteMarker({ points }: { points: EphemerisPoint[] }) {
-  const currentTime = useTimelineStore((s) => s.currentTime);
+  const map = useMap();
 
-  const idx = Math.max(
-    0,
-    Math.min(points.length - 1, Math.round(currentTime))
-  );
-  const p = points[idx];
-  if (!p) return null;
+  useEffect(() => {
+    if (!points.length) return;
+    const marker = L.circleMarker([points[0].lat_deg, points[0].lon_deg], {
+      radius: 6,
+      color: PHOS,
+      weight: 1.5,
+      fillColor: PHOS,
+      fillOpacity: 0.85,
+    }).addTo(map);
 
-  return (
-    <CircleMarker
-      center={[p.lat_deg, p.lon_deg]}
-      radius={6}
-      pathOptions={{
-        color: PHOS,
-        weight: 1.5,
-        fillColor: PHOS,
-        fillOpacity: 0.85,
-      }}
-    >
-      <Popup>
-        <div
-          style={{ fontFamily: "var(--font-mono)", fontSize: 11 }}
-          className="flex flex-col gap-0.5"
-        >
-          <strong style={{ color: PHOS }}>SAT</strong>
-          <span>t = {p.t.toFixed(1)} s</span>
-          <span>alt = {p.alt_km.toFixed(1)} km</span>
-          <span>ONA→AOI = {p.off_nadir_to_aoi_center_deg.toFixed(2)}°</span>
-          <span>
-            {p.lat_deg.toFixed(3)}°, {p.lon_deg.toFixed(3)}°
-          </span>
-        </div>
-      </Popup>
-    </CircleMarker>
-  );
+    const last = points[points.length - 1].t;
+    const first = points[0].t;
+    const span = Math.max(1, last - first);
+
+    // Pre-compute t-values to avoid per-tick allocations.
+    const ts = points.map((p) => p.t);
+
+    const update = (currentTime: number) => {
+      // Binary search for the nearest index by t (not by array index).
+      const target = first + Math.max(0, Math.min(span, currentTime - first));
+      let lo = 0;
+      let hi = ts.length - 1;
+      while (lo < hi) {
+        const mid = (lo + hi) >> 1;
+        if (ts[mid] < target) lo = mid + 1;
+        else hi = mid;
+      }
+      const p = points[lo];
+      if (p) marker.setLatLng([p.lat_deg, p.lon_deg]);
+    };
+
+    update(useTimelineStore.getState().currentTime);
+    const unsub = useTimelineStore.subscribe((s, prev) => {
+      if (s.currentTime !== prev.currentTime) update(s.currentTime);
+    });
+
+    return () => {
+      unsub();
+      marker.remove();
+    };
+  }, [map, points]);
+
+  return null;
 }
 
 function TileMarker({
@@ -249,6 +272,3 @@ function TileMarker({
     </CircleMarker>
   );
 }
-
-// Suppress unused import warning for WARN — used by status palette indirectly.
-void WARN;

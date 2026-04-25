@@ -1,10 +1,10 @@
 @import "tailwindcss";
 
 /* ============================================================
-   chunkyweb — Subterranean Lab
+   chunkyweb — Ember Atelier
    ----------------------------------------------------------
-   Dark slate canvas. Chartreuse phosphor as the only bright
-   signal. Coral for warnings, sky-blue for info, sage for go.
+   Warm cocoa canvas. Ember-orange as the one bright signal.
+   Amber for warnings, dusty teal for info, lime-sage for go.
    No gradients-on-white. No glassmorphism. No drop shadows.
    Hairlines, monospace coordinates, dense tabular data.
 
@@ -12,48 +12,50 @@
    - One static dot-grid layer on body. No fixed-attached.
    - No infinite background animations.
    - Motion is opt-in and respects reduced-motion.
+   - Playback hot path uses imperative store subscriptions —
+     React never re-renders during scrub/play.
    ============================================================ */
 
 :root {
-  /* Slate canvas */
-  --bg:           #0c0e14;   /* deepest — page bg */
-  --bg-soft:      #11141c;   /* card surface */
-  --bg-lift:      #181c27;   /* elevated / hover */
-  --bg-sunk:      #07080c;   /* recessed (input bg) */
+  /* Cocoa canvas */
+  --bg:           #13110f;   /* deepest — page bg */
+  --bg-soft:      #1c1814;   /* card surface */
+  --bg-lift:      #25201a;   /* elevated / hover */
+  --bg-sunk:      #0a0907;   /* recessed (input bg) */
 
   /* Hairlines */
-  --line:         #1f2330;   /* default 1px rule */
-  --line-bright:  #2c3243;   /* hover / active */
-  --line-loud:    #3a4159;   /* selected */
+  --line:         #2c2620;   /* default 1px rule */
+  --line-bright:  #3d362d;   /* hover / active */
+  --line-loud:    #524940;   /* selected */
 
   /* Type */
-  --fg:           #e8eaf2;   /* primary */
-  --fg-mute:      #9aa1bb;   /* secondary */
-  --fg-faint:     #5d6483;   /* tertiary */
-  --fg-ghost:     #3d435c;   /* placeholder */
+  --fg:           #f0e8d8;   /* primary — warm bone */
+  --fg-mute:      #a89c84;   /* secondary */
+  --fg-faint:     #6e6452;   /* tertiary */
+  --fg-ghost:     #4a4338;   /* placeholder */
 
-  /* Phosphor — chartreuse, the one bright signal */
-  --phos:         #d8f76b;   /* primary phosphor */
-  --phos-deep:    #b7d144;
-  --phos-soft:    rgba(216, 247, 107, 0.14);
-  --phos-line:    rgba(216, 247, 107, 0.32);
+  /* Ember — warm orange, the one bright signal */
+  --phos:         #ff8a3d;   /* primary ember */
+  --phos-deep:    #e5701f;
+  --phos-soft:    rgba(255, 138, 61, 0.14);
+  --phos-line:    rgba(255, 138, 61, 0.32);
 
   /* Status palette */
-  --warn:         #ff8a5c;   /* warm coral */
-  --warn-soft:    rgba(255, 138, 92, 0.14);
-  --danger:       #ff5f7e;   /* hot pink-coral, distinctive */
-  --danger-soft:  rgba(255, 95, 126, 0.14);
-  --info:         #7cd5ff;   /* sky cyan */
-  --info-soft:    rgba(124, 213, 255, 0.14);
-  --go:           #79e0a3;   /* sage mint */
-  --go-soft:      rgba(121, 224, 163, 0.14);
+  --warn:         #ffc857;   /* warm amber */
+  --warn-soft:    rgba(255, 200, 87, 0.14);
+  --danger:       #f43965;   /* magenta-rose */
+  --danger-soft:  rgba(244, 57, 101, 0.14);
+  --info:         #6cc7b8;   /* dusty teal */
+  --info-soft:    rgba(108, 199, 184, 0.14);
+  --go:           #b3d97a;   /* lime-sage */
+  --go-soft:      rgba(179, 217, 122, 0.14);
 
   /* Map / tile semantic */
-  --tile-imaged:        #79e0a3;
-  --tile-skipped-sat:   #ff8a5c;
-  --tile-skipped-time:  #5d6483;
-  --tile-unreachable:   #ff5f7e;
-  --tile-pending:       #2c3243;
+  --tile-imaged:        #b3d97a;
+  --tile-skipped-sat:   #ffc857;
+  --tile-skipped-time:  #6e6452;
+  --tile-unreachable:   #f43965;
+  --tile-pending:       #3d362d;
 
   /* Geometry */
   --rule-thin: 1px;
@@ -106,7 +108,7 @@ html, body {
    Pinned to the body, no fixed-attachment. */
 body {
   background-image:
-    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.025) 0.5px, transparent 0.6px);
+    radial-gradient(circle at 50% 50%, rgba(255, 220, 180, 0.028) 0.5px, transparent 0.6px);
   background-size: 22px 22px;
 }
 

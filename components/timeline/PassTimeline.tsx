@@ -24,15 +24,15 @@ import {
 import { cn } from "@/lib/cn";
 
 // Hex literals — Recharts pipes these into SVG attrs, CSS vars don't resolve.
-const FG = "#e8eaf2";
-const FG_MUTE = "#9aa1bb";
-const FG_FAINT = "#5d6483";
-const LINE = "#1f2330";
-const LINE_BRIGHT = "#2c3243";
-const PHOS = "#d8f76b";
-const WARN = "#ff8a5c";
-const DANGER = "#ff5f7e";
-const BG_LIFT = "#181c27";
+const FG = "#f0e8d8";
+const FG_MUTE = "#a89c84";
+const FG_FAINT = "#6e6452";
+const LINE = "#2c2620";
+const LINE_BRIGHT = "#3d362d";
+const PHOS = "#ff8a3d";
+const WARN = "#ffc857";
+const DANGER = "#f43965";
+const BG_LIFT = "#25201a";
 
 const TOOLTIP_STYLE: React.CSSProperties = {
   backgroundColor: BG_LIFT,
@@ -51,20 +51,33 @@ const AXIS = {
 };
 
 /* --------------------------------------------------------------
-   Isolated subscribers — these are the ONLY components that read
-   currentTime/isPlaying. The parent PassTimeline never re-renders
-   during playback, which keeps Recharts/Leaflet stable.
+   Imperative subscribers — these components mount ONCE and use
+   `useTimelineStore.subscribe(...)` to mutate the DOM directly.
+   No React re-renders happen during scrubbing or playback. This
+   is the only pattern that's safe alongside Recharts/Leaflet at
+   high tick rates (those libs leak SVG nodes if their parent
+   re-renders 15-30×/sec).
    -------------------------------------------------------------- */
 
 function TimeReadout() {
-  const t = useTimelineStore((s) => s.currentTime);
+  const ref = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    const write = (t: number) => {
+      if (ref.current) ref.current.textContent = t.toFixed(1);
+    };
+    write(useTimelineStore.getState().currentTime);
+    return useTimelineStore.subscribe((s, prev) => {
+      if (s.currentTime !== prev.currentTime) write(s.currentTime);
+    });
+  }, []);
   return (
     <div className="flex items-baseline gap-1.5">
       <span
+        ref={ref}
         className="numeric leading-none text-[var(--phos)] tabular-nums"
         style={{ fontSize: 26 }}
       >
-        {t.toFixed(1)}
+        0.0
       </span>
       <span className="mono text-[10px] uppercase tracking-[0.16em] text-[var(--fg-faint)]">
         s / {PASS_DURATION_S}
@@ -122,37 +135,63 @@ function SpeedPicker() {
 }
 
 function TimeScrubber() {
-  const t = useTimelineStore((s) => s.currentTime);
-  const setTime = useTimelineStore((s) => s.setTime);
+  const ref = useRef<HTMLInputElement>(null);
+  const draggingRef = useRef(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const write = (t: number) => {
+      if (!draggingRef.current && el) el.value = String(t);
+    };
+    write(useTimelineStore.getState().currentTime);
+    return useTimelineStore.subscribe((s, prev) => {
+      if (s.currentTime !== prev.currentTime) write(s.currentTime);
+    });
+  }, []);
   return (
     <input
+      ref={ref}
       type="range"
       min={0}
       max={PASS_DURATION_S}
       step={0.5}
-      value={t}
-      onChange={(e) => setTime(parseFloat(e.target.value))}
+      defaultValue={0}
+      onPointerDown={() => {
+        draggingRef.current = true;
+      }}
+      onPointerUp={() => {
+        draggingRef.current = false;
+      }}
+      onChange={(e) =>
+        useTimelineStore.getState().setTime(parseFloat(e.target.value))
+      }
       className="w-full max-w-md flex-1"
     />
   );
 }
 
-/* CSS-only cursor overlay — positioned absolutely on top of the
-   chart's plot area. Subscribes to currentTime, BUT only updates
-   its own transform; the underlying SVG chart is never touched. */
+/* CSS-only cursor overlay — mutates style.left imperatively. The
+   underlying SVG chart is never touched. */
 function CursorOverlay() {
-  const t = useTimelineStore((s) => s.currentTime);
-  const pct = Math.max(0, Math.min(1, t / PASS_DURATION_S));
-  // Plot area is approximately inset 8px left, 12px right (matches chart margins).
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const write = (t: number) => {
+      const pct = Math.max(0, Math.min(1, t / PASS_DURATION_S));
+      el.style.left = `calc(40px + ${pct} * (100% - 52px))`;
+    };
+    write(useTimelineStore.getState().currentTime);
+    return useTimelineStore.subscribe((s, prev) => {
+      if (s.currentTime !== prev.currentTime) write(s.currentTime);
+    });
+  }, []);
   return (
     <div
+      ref={ref}
       aria-hidden
       className="pointer-events-none absolute"
-      style={{
-        top: 6,
-        bottom: 18,
-        left: `calc(40px + ${pct} * (100% - 52px))`,
-      }}
+      style={{ top: 6, bottom: 18, left: "40px" }}
     >
       <span className="block h-full w-px bg-[var(--phos)] opacity-80" />
       <span className="absolute -top-[3px] left-[-2px] block h-1.5 w-1.5 bg-[var(--phos)]" />
