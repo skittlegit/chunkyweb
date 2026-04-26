@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef } from "react";
 import {
-  ComposedChart,
   Line,
   LineChart,
   ReferenceArea,
@@ -17,22 +16,19 @@ import { useEphemeris } from "@/hooks/useEphemeris";
 import { useAppStore } from "@/store/useAppStore";
 import { useTimelineStore } from "@/store/useTimelineStore";
 import {
-  BODY_RATE_LIMIT_DPS,
   OFF_NADIR_LIMIT_DEG,
   PASS_DURATION_S,
 } from "@/lib/constants";
 import { cn } from "@/lib/cn";
 
 // Hex literals — Recharts pipes these into SVG attrs, CSS vars don't resolve.
-const FG = "#f0e8d8";
-const FG_MUTE = "#a89c84";
+const FG = "#e6dfcf";
 const FG_FAINT = "#6e6452";
-const LINE = "#2c2620";
-const LINE_BRIGHT = "#3d362d";
+const LINE_BRIGHT = "#3a322a";
 const PHOS = "#ff8a3d";
 const WARN = "#ffc857";
 const DANGER = "#f43965";
-const BG_LIFT = "#25201a";
+const BG_LIFT = "#29231b";
 
 const TOOLTIP_STYLE: React.CSSProperties = {
   backgroundColor: BG_LIFT,
@@ -263,17 +259,6 @@ export function PassTimeline() {
     return out;
   }, [ephemeris]);
 
-  const bodyRateData = useMemo(() => {
-    const frames = result?.simulate?.per_frame;
-    if (!frames || !frames.length) return [];
-    const stride = Math.max(1, Math.ceil(frames.length / 220));
-    const out: { t: number; rate: number }[] = [];
-    for (let i = 0; i < frames.length; i += stride) {
-      out.push({ t: frames[i].t_start, rate: frames[i].body_rate_dps });
-    }
-    return out;
-  }, [result]);
-
   const shutterAreas = useMemo(() => {
     const sw = result?.plan?.schedule.shutters ?? [];
     if (!sw.length) return [];
@@ -293,19 +278,19 @@ export function PassTimeline() {
   const window = result?.plan?.diagnostics.imaging_window_s;
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       <PlaybackEngine />
 
       {/* Transport */}
-      <div className="flex flex-wrap items-center gap-4 border-b border-[var(--line)] pb-4">
+      <div className="flex flex-wrap items-center gap-4">
         <PlayPauseButton />
         <TimeReadout />
         <SpeedPicker />
         <TimeScrubber />
       </div>
 
-      <ChartFrame label="Off-nadir angle" unit="DEG" tag="01">
-        <ResponsiveContainer width="100%" height={130}>
+      <ChartFrame label="Off-nadir angle" unit="DEG">
+        <ResponsiveContainer width="100%" height={170}>
           <LineChart
             data={offNadirData}
             syncId="timeline"
@@ -333,6 +318,16 @@ export function PassTimeline() {
                 strokeOpacity={0.3}
               />
             )}
+            {shutterAreas.map((a, i) => (
+              <ReferenceArea
+                key={i}
+                x1={a.x1}
+                x2={a.x2}
+                fill={WARN}
+                fillOpacity={0.14}
+                stroke="none"
+              />
+            ))}
             <Line
               type="monotone"
               dataKey="ona"
@@ -348,53 +343,6 @@ export function PassTimeline() {
           </LineChart>
         </ResponsiveContainer>
       </ChartFrame>
-
-      <ChartFrame label="Body rate · shutter intervals" unit="DEG/S" tag="02">
-        <ResponsiveContainer width="100%" height={130}>
-          <ComposedChart
-            data={bodyRateData}
-            syncId="timeline"
-            margin={{ top: 6, right: 12, bottom: 4, left: 8 }}
-          >
-            <XAxis
-              dataKey="t"
-              type="number"
-              domain={[0, PASS_DURATION_S]}
-              {...AXIS}
-            />
-            <YAxis domain={[0, 0.1]} {...AXIS} width={42} />
-            <ReferenceLine
-              y={BODY_RATE_LIMIT_DPS}
-              stroke={DANGER}
-              strokeDasharray="4 4"
-            />
-            {shutterAreas.map((a, i) => (
-              <ReferenceArea
-                key={i}
-                x1={a.x1}
-                x2={a.x2}
-                fill={WARN}
-                fillOpacity={0.18}
-                stroke={WARN}
-                strokeOpacity={0.5}
-                strokeWidth={1}
-              />
-            ))}
-            <Line
-              type="monotone"
-              dataKey="rate"
-              stroke={FG_MUTE}
-              strokeWidth={1.4}
-              dot={false}
-              isAnimationActive={false}
-            />
-            <Tooltip
-              contentStyle={TOOLTIP_STYLE}
-              cursor={{ stroke: FG_FAINT }}
-            />
-          </ComposedChart>
-        </ResponsiveContainer>
-      </ChartFrame>
     </div>
   );
 }
@@ -402,28 +350,17 @@ export function PassTimeline() {
 function ChartFrame({
   label,
   unit,
-  tag,
   children,
 }: {
   label: string;
   unit?: string;
-  tag?: string;
   children: React.ReactNode;
 }) {
   return (
-    <figure className="relative flex flex-col gap-2 border border-[var(--line)] bg-[var(--bg-sunk)] p-3">
+    <figure className="relative flex flex-col gap-2">
       <header className="flex items-baseline justify-between">
-        <div className="flex items-baseline gap-3">
-          {tag && (
-            <span className="mono text-[10px] tabular-nums tracking-[0.18em] text-[var(--fg-faint)]">
-              {tag}
-            </span>
-          )}
-          <span className="display text-[13px] text-[var(--fg)]">{label}</span>
-        </div>
-        {unit && (
-          <span className="kbd text-[var(--fg-faint)]">{unit}</span>
-        )}
+        <span className="text-[12px] text-[var(--fg-mute)]">{label}</span>
+        {unit && <span className="kbd text-[var(--fg-faint)]">{unit}</span>}
       </header>
       <div className="relative">
         {children}

@@ -28,7 +28,7 @@ import type { TileInfo, EphemerisPoint } from "@/lib/types";
 // Hex literals — Leaflet writes these straight into SVG `stroke`.
 const PHOS = "#ff8a3d";
 const FG_FAINT = "#6e6452";
-const FG_MUTE = "#a89c84";
+const FG_MUTE = "#a09483";
 
 type IconDefaultPrototype = L.Icon.Default & { _getIconUrl?: () => string };
 delete (L.Icon.Default.prototype as IconDefaultPrototype)._getIconUrl;
