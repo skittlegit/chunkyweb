@@ -53,7 +53,10 @@ export default function CoverageMapInner() {
     const stride = Math.max(1, Math.ceil(pts.length / 200));
     const out: [number, number][] = [];
     for (let i = 0; i < pts.length; i += stride) {
-      out.push([pts[i].lat_deg, pts[i].lon_deg]);
+      const p = pts[i];
+      if (Number.isFinite(p?.lat_deg) && Number.isFinite(p?.lon_deg)) {
+        out.push([p.lat_deg, p.lon_deg]);
+      }
     }
     return out;
   }, [ephemeris]);
@@ -66,7 +69,10 @@ export default function CoverageMapInner() {
     const stride = Math.max(1, Math.ceil(filtered.length / 200));
     const out: [number, number][] = [];
     for (let i = 0; i < filtered.length; i += stride) {
-      out.push([filtered[i].lat_deg, filtered[i].lon_deg]);
+      const p = filtered[i];
+      if (Number.isFinite(p?.lat_deg) && Number.isFinite(p?.lon_deg)) {
+        out.push([p.lat_deg, p.lon_deg]);
+      }
     }
     return out;
   }, [ephemeris, imagingWindow]);
@@ -142,16 +148,24 @@ export default function CoverageMapInner() {
         </CircleMarker>
       )}
 
-      {tiles?.map((tile) => (
-        <TileMarker
-          key={tile.id}
-          tile={tile}
-          selected={tile.id === selectedTileId}
-          onClick={() =>
-            selectTile(tile.id === selectedTileId ? null : tile.id)
-          }
-        />
-      ))}
+      {tiles?.map((tile) => {
+        if (
+          !Number.isFinite(tile.center_lat) ||
+          !Number.isFinite(tile.center_lon)
+        ) {
+          return null;
+        }
+        return (
+          <TileMarker
+            key={tile.id}
+            tile={tile}
+            selected={tile.id === selectedTileId}
+            onClick={() =>
+              selectTile(tile.id === selectedTileId ? null : tile.id)
+            }
+          />
+        );
+      })}
 
       {/* Satellite — imperative Leaflet marker. Mounts ONCE, then
           subscribes to currentTime and calls `marker.setLatLng()`

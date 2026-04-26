@@ -8,6 +8,7 @@ import type {
   Schedule,
   SimulateRequest,
   SimulateResponse,
+  TileInfo,
   ValidateResponse,
   AttitudeSample,
 } from "./types";
@@ -159,6 +160,10 @@ interface RawShutter {
   t_end?: number;
   duration?: number;
   footprint?: [number, number][];
+  tile_id?: string;
+  tile_lat_deg?: number;
+  tile_lon_deg?: number;
+  off_nadir_deg?: number;
   [k: string]: unknown;
 }
 
@@ -172,11 +177,26 @@ interface RawSchedule {
   [k: string]: unknown;
 }
 
+interface RawTile {
+  id: string;
+  // New flat backend shape
+  lat_deg?: number;
+  lon_deg?: number;
+  size_deg?: number;
+  // Pre-existing UI shape, in case it's already adapted
+  center_lat?: number;
+  center_lon?: number;
+  status?: TileInfo["status"];
+  off_nadir_deg?: number;
+  footprint?: [number, number][] | null;
+  shutter_index?: number;
+}
+
 interface RawPlanResponse {
   schedule: RawSchedule;
   diagnostics?: Partial<PlanResponse["diagnostics"]> & Record<string, unknown>;
   ephemeris_summary?: PlanResponse["ephemeris_summary"];
-  tiles?: PlanResponse["tiles"];
+  tiles?: RawTile[];
   footprints?: number[][][];
   wheel_momentum_timeline?: PlanResponse["wheel_momentum_timeline"];
 }
@@ -262,9 +282,61 @@ function adaptPlan(raw: RawPlanResponse): PlanResponse {
         sub_sat_lat_at_ca: 0,
         sub_sat_lon_at_ca: 0,
       },
-    tiles: raw.tiles ?? [],
+    tiles: adaptTiles(raw.tiles, schedule.shutters),
     wheel_momentum_timeline: raw.wheel_momentum_timeline ?? [],
   };
+}
+
+// Backend tiles ship as `{id, lat_deg, lon_deg, size_deg}`. The UI consumes
+// `{id, center_lat, center_lon, status, off_nadir_deg, footprint}`. Build a
+// square footprint from size_deg and mark a tile as imaged when any shutter
+// references it by `tile_id`.
+function adaptTiles(
+  raw: RawTile[] | undefined,
+  shutters: Schedule["shutters"]
+): TileInfo[] {
+  if (!raw || !raw.length) return [];
+  const imagedById = new Map<
+    string,
+    { off_nadir_deg: number; footprint?: [number, number][]; index: number }
+  >();
+  shutters.forEach((sh, i) => {
+    const tid = (sh as { tile_id?: string }).tile_id;
+    if (!tid) return;
+    imagedById.set(tid, {
+      off_nadir_deg: Number(
+        (sh as { off_nadir_deg?: number }).off_nadir_deg ?? 0
+      ),
+      footprint: sh.footprint as [number, number][] | undefined,
+      index: i,
+    });
+  });
+
+  return raw.map((t) => {
+    const center_lat = Number(t.center_lat ?? t.lat_deg ?? 0);
+    const center_lon = Number(t.center_lon ?? t.lon_deg ?? 0);
+    const half = Number(t.size_deg ?? 0) / 2;
+    const fallbackSquare: [number, number][] | null =
+      half > 0
+        ? [
+            [center_lat - half, center_lon - half],
+            [center_lat + half, center_lon - half],
+            [center_lat + half, center_lon + half],
+            [center_lat - half, center_lon + half],
+          ]
+        : null;
+    const hit = imagedById.get(t.id);
+    return {
+      id: t.id,
+      center_lat,
+      center_lon,
+      status: t.status ?? (hit ? "imaged" : "pending"),
+      shutter_index: t.shutter_index ?? hit?.index,
+      off_nadir_deg: Number(t.off_nadir_deg ?? hit?.off_nadir_deg ?? 0),
+      footprint:
+        t.footprint ?? hit?.footprint ?? fallbackSquare,
+    };
+  });
 }
 
 interface RawSimulateResponse {
