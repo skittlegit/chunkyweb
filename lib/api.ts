@@ -197,9 +197,27 @@ function adaptSchedule(raw: RawSchedule | undefined): Schedule {
       footprint: s.footprint,
     };
   });
+
+  // The planner emits attitude at ~50 Hz (~35k samples for a 720 s pass),
+  // which is ~4 MB of JSON. The UI never reads it directly and the simulate
+  // endpoint only needs ~1 Hz resolution to recover body rates at shutter
+  // midpoints. Downsample at the API boundary so we never hold a fat copy.
+  const fullAttitude = (raw?.attitude as AttitudeSample[] | undefined) ?? [];
+  const MAX_ATT = 1024;
+  let attitude: AttitudeSample[] = fullAttitude;
+  if (fullAttitude.length > MAX_ATT) {
+    const stride = Math.ceil(fullAttitude.length / MAX_ATT);
+    attitude = [];
+    for (let i = 0; i < fullAttitude.length; i += stride) {
+      attitude.push(fullAttitude[i]);
+    }
+    const last = fullAttitude[fullAttitude.length - 1];
+    if (attitude[attitude.length - 1]?.t !== last.t) attitude.push(last);
+  }
+
   return {
     objective: raw?.objective,
-    attitude: (raw?.attitude as AttitudeSample[] | undefined) ?? [],
+    attitude,
     shutters,
     notes: raw?.notes,
     meta: raw?.meta,
@@ -360,7 +378,8 @@ export const api = {
     return adaptPlan(raw);
   },
   simulate: async (params: SimulateRequest): Promise<SimulateResponse> => {
-    // Send the schedule in backend-native shape (shutters with t_end).
+    // Attitude is already downsampled at the plan-adapt boundary, so the
+    // outbound body is small (~80 KB vs ~4 MB raw).
     const raw = await apiFetch<RawSimulateResponse>("/api/simulate", {
       method: "POST",
       body: JSON.stringify(params),

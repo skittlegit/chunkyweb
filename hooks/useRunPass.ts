@@ -34,12 +34,28 @@ export function useRunPass() {
       case_id: caseId,
       schedule: plan.schedule,
     });
+
+    // CRITICAL memory fix: the backend ships ~35k attitude quaternion
+    // samples (~4 MB per case). The UI never reads them — simulate is
+    // the only consumer, and it just ran. Drop the array before storing
+    // so the Zustand cache and any later renders stay small. Without
+    // this, repeated runs / case switches accumulate tens of MB and
+    // crash the tab.
+    const slimPlan = {
+      ...plan,
+      schedule: { ...plan.schedule, attitude: [] },
+    };
     setCaseResult(caseId, {
-      plan,
+      plan: slimPlan,
       simulate,
       ranAt: Date.now(),
       durationMs: performance.now() - start,
     });
+
+    // Release react-query mutation caches — those still hold the fat
+    // response and request bodies until they get GC'd.
+    planMutation.reset();
+    simulateMutation.reset();
   };
 
   return {
