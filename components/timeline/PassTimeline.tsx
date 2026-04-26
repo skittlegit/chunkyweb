@@ -22,13 +22,12 @@ import {
 import { cn } from "@/lib/cn";
 
 // Hex literals — Recharts pipes these into SVG attrs, CSS vars don't resolve.
-const FG = "#e6dfcf";
-const FG_FAINT = "#6e6452";
-const LINE_BRIGHT = "#3a322a";
-const PHOS = "#ff8a3d";
-const WARN = "#ffc857";
-const DANGER = "#f43965";
-const BG_LIFT = "#29231b";
+const FG = "#ededed";
+const FG_FAINT = "#6a6a6a";
+const LINE_BRIGHT = "#353535";
+const PHOS = "#ffffff";
+const WARN = "#9a9a9a";
+const BG_LIFT = "#1c1c1c";
 
 const TOOLTIP_STYLE: React.CSSProperties = {
   backgroundColor: BG_LIFT,
@@ -305,8 +304,8 @@ export function PassTimeline() {
             <YAxis domain={[0, 75]} {...AXIS} width={32} />
             <ReferenceLine
               y={OFF_NADIR_LIMIT_DEG}
-              stroke={DANGER}
-              strokeDasharray="4 4"
+              stroke={FG_FAINT}
+              strokeDasharray="2 4"
             />
             {window && (
               <ReferenceArea

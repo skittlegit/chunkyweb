@@ -21,7 +21,8 @@ import { DIFFICULTY_COLOR, DIFFICULTY_LABEL } from "@/lib/constants";
 export default function ConsolePage() {
   const { data: cases } = useCases();
   const selectedCaseId = useAppStore((s) => s.selectedCaseId);
-  const result = useAppStore((s) => s.results[selectedCaseId]);
+  const results = useAppStore((s) => s.results);
+  const result = results[selectedCaseId];
   const { error } = useRunPass();
   const [framesOpen, setFramesOpen] = useState(false);
 
@@ -29,6 +30,26 @@ export default function ConsolePage() {
     () => (cases ?? []).find((c) => c.id === selectedCaseId),
     [cases, selectedCaseId]
   );
+
+  // Mission total — weighted sum across all cases that have simulated.
+  // S_total = Σ (S_orbit_i × weight_i) / Σ weight_i over completed cases.
+  const mission = useMemo(() => {
+    if (!cases?.length) return null;
+    const rows = cases.map((c) => {
+      const r = results[c.id]?.simulate?.score?.S_orbit;
+      return {
+        id: c.id,
+        name: c.name,
+        weight: c.weight,
+        S: typeof r === "number" && Number.isFinite(r) ? r : null,
+      };
+    });
+    const done = rows.filter((r) => r.S !== null);
+    const wSum = done.reduce((a, r) => a + r.weight, 0);
+    const sSum = done.reduce((a, r) => a + (r.S as number) * r.weight, 0);
+    const S_total = wSum > 0 ? sSum / wSum : null;
+    return { rows, done: done.length, total: rows.length, S_total };
+  }, [cases, results]);
 
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-[var(--bg)] text-[var(--fg)]">
@@ -66,6 +87,59 @@ export default function ConsolePage() {
 
           {error && (
             <ErrorState title="Pass run failed" message={error.message} />
+          )}
+
+          {/* Mission strip — per-case scores + cumulative S_total. */}
+          {mission && mission.rows.length > 0 && (
+            <section
+              className="flex flex-wrap items-stretch gap-0 border border-[var(--line)] bg-[var(--bg-soft)]"
+              style={{ borderRadius: 6 }}
+            >
+              {mission.rows.map((r, i) => {
+                const active = r.id === selectedCaseId;
+                return (
+                  <div
+                    key={r.id}
+                    className={
+                      "flex flex-1 items-baseline gap-3 px-5 py-3 " +
+                      (i > 0 ? "border-l border-[var(--line)] " : "") +
+                      (active ? "bg-[var(--bg-lift)]" : "")
+                    }
+                  >
+                    <span className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--fg-faint)]">
+                      C·{String(i + 1).padStart(2, "0")}
+                    </span>
+                    <span
+                      className="numeric tabular-nums leading-none text-[var(--fg)]"
+                      style={{ fontSize: 22, letterSpacing: "-0.035em" }}
+                    >
+                      {r.S !== null ? r.S.toFixed(3) : "———"}
+                    </span>
+                    <span className="mono text-[10px] tabular-nums text-[var(--fg-mute)]">
+                      ×{r.weight.toFixed(2)}
+                    </span>
+                  </div>
+                );
+              })}
+              <div
+                className="flex items-baseline gap-3 border-l border-[var(--line-bright)] bg-[var(--bg-lift)] px-6 py-3"
+              >
+                <span className="mono text-[10px] uppercase tracking-[0.22em] text-[var(--fg-mute)]">
+                  S_total
+                </span>
+                <span
+                  className="numeric tabular-nums leading-none text-[var(--phos)]"
+                  style={{ fontSize: 28, letterSpacing: "-0.04em" }}
+                >
+                  {mission.S_total !== null
+                    ? mission.S_total.toFixed(3)
+                    : "———"}
+                </span>
+                <span className="mono text-[10px] tabular-nums text-[var(--fg-faint)]">
+                  {mission.done}/{mission.total}
+                </span>
+              </div>
+            </section>
           )}
 
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.7fr_1fr]">

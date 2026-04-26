@@ -24,15 +24,15 @@ export const DARK_TILE_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; CARTO';
 
 // ============================================================
-// Palette — Ember Atelier
+// Palette — Monochrome
 // ============================================================
 
 export const TILE_STATUS_COLOR: Record<TileStatus, string> = {
-  imaged:             "#b3d97a", // lime-sage go
-  skipped_saturation: "#ffc857", // amber warn
-  skipped_time:       "#6e6452", // muted warm
-  unreachable:        "#f43965", // magenta-rose danger
-  pending:            "#524940", // line-loud
+  imaged:             "#ffffff", // full white — success
+  skipped_saturation: "#9a9a9a", // mid gray
+  skipped_time:       "#555555", // dim
+  unreachable:        "#ededed", // near-white (rendered dashed)
+  pending:            "#353535", // very dim
 };
 
 export const TILE_STATUS_LABEL: Record<TileStatus, string> = {
@@ -44,16 +44,16 @@ export const TILE_STATUS_LABEL: Record<TileStatus, string> = {
 };
 
 export const WHEEL_COLORS: [string, string, string, string] = [
-  "#ff8a3d", // ember
-  "#ffc857",
-  "#6cc7b8",
-  "#b3d97a",
+  "#ffffff",
+  "#c8c8c8",
+  "#8a8a8a",
+  "#555555",
 ];
 
 export const DIFFICULTY_COLOR: Record<"easy" | "moderate" | "hard", string> = {
-  easy:     "#b3d97a",
-  moderate: "#ffc857",
-  hard:     "#f43965",
+  easy:     "#ededed",
+  moderate: "#9a9a9a",
+  hard:     "#ffffff",
 };
 
 export const DIFFICULTY_LABEL: Record<"easy" | "moderate" | "hard", string> = {

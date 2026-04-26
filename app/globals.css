@@ -1,11 +1,10 @@
 @import "tailwindcss";
 
 /* ============================================================
-   chunkyweb — Ember Atelier
+   chunkyweb — Monochrome
    ----------------------------------------------------------
-   Warm cocoa canvas. Ember-orange as the one bright signal.
-   Amber for warnings, dusty teal for info, lime-sage for go.
-   No gradients-on-white. No glassmorphism. No drop shadows.
+   Pure black-and-white. White is the only accent; status is
+   communicated by brightness, weight, and pattern — never hue.
    Hairlines, monospace coordinates, dense tabular data.
 
    Performance rules (carried from prior iterations):
@@ -17,45 +16,45 @@
    ============================================================ */
 
 :root {
-  /* Cocoa canvas */
-  --bg:           #13110f;   /* deepest — page bg */
-  --bg-soft:      #1c1814;   /* card surface */
-  --bg-lift:      #25201a;   /* elevated / hover */
-  --bg-sunk:      #0a0907;   /* recessed (input bg) */
+  /* Canvas — neutral grays, no warmth */
+  --bg:           #0a0a0a;   /* page bg */
+  --bg-soft:      #131313;   /* card surface */
+  --bg-lift:      #1c1c1c;   /* elevated / hover */
+  --bg-sunk:      #050505;   /* recessed (input bg) */
 
   /* Hairlines */
-  --line:         #2c2620;   /* default 1px rule */
-  --line-bright:  #3d362d;   /* hover / active */
-  --line-loud:    #524940;   /* selected */
+  --line:         #242424;   /* default 1px rule */
+  --line-bright:  #353535;   /* hover / active */
+  --line-loud:    #4a4a4a;   /* selected */
 
-  /* Type */
-  --fg:           #f0e8d8;   /* primary — warm bone */
-  --fg-mute:      #a89c84;   /* secondary */
-  --fg-faint:     #6e6452;   /* tertiary */
-  --fg-ghost:     #4a4338;   /* placeholder */
+  /* Type — cool neutral grays */
+  --fg:           #ededed;   /* primary */
+  --fg-mute:      #9a9a9a;   /* secondary */
+  --fg-faint:     #6a6a6a;   /* tertiary */
+  --fg-ghost:     #444444;   /* placeholder */
 
-  /* Ember — warm orange, the one bright signal */
-  --phos:         #ff8a3d;   /* primary ember */
-  --phos-deep:    #e5701f;
-  --phos-soft:    rgba(255, 138, 61, 0.14);
-  --phos-line:    rgba(255, 138, 61, 0.32);
+  /* Accent — pure white (the lone bright signal) */
+  --phos:         #ffffff;
+  --phos-deep:    #d4d4d4;
+  --phos-soft:    rgba(255, 255, 255, 0.10);
+  --phos-line:    rgba(255, 255, 255, 0.28);
 
-  /* Status palette */
-  --warn:         #ffc857;   /* warm amber */
-  --warn-soft:    rgba(255, 200, 87, 0.14);
-  --danger:       #f43965;   /* magenta-rose */
-  --danger-soft:  rgba(244, 57, 101, 0.14);
-  --info:         #6cc7b8;   /* dusty teal */
-  --info-soft:    rgba(108, 199, 184, 0.14);
-  --go:           #b3d97a;   /* lime-sage */
-  --go-soft:      rgba(179, 217, 122, 0.14);
+  /* Status — grayscale ramp; differentiation by brightness */
+  --warn:         #c8c8c8;   /* light gray */
+  --warn-soft:    rgba(255, 255, 255, 0.08);
+  --danger:       #ffffff;   /* full white — reserved for errors */
+  --danger-soft:  rgba(255, 255, 255, 0.10);
+  --info:         #8a8a8a;   /* mid gray */
+  --info-soft:    rgba(255, 255, 255, 0.06);
+  --go:           #ededed;   /* near-white — success */
+  --go-soft:      rgba(255, 255, 255, 0.08);
 
-  /* Map / tile semantic */
-  --tile-imaged:        #b3d97a;
-  --tile-skipped-sat:   #ffc857;
-  --tile-skipped-time:  #6e6452;
-  --tile-unreachable:   #f43965;
-  --tile-pending:       #3d362d;
+  /* Map / tile semantic — brightness ramp */
+  --tile-imaged:        #ffffff;   /* full white */
+  --tile-skipped-sat:   #9a9a9a;   /* mid */
+  --tile-skipped-time:  #555555;   /* dim */
+  --tile-unreachable:   #ededed;   /* near-white, dashed */
+  --tile-pending:       #353535;   /* very dim */
 
   /* Geometry */
   --rule-thin: 1px;
@@ -108,7 +107,7 @@ html, body {
    Pinned to the body, no fixed-attachment. */
 body {
   background-image:
-    radial-gradient(circle at 50% 50%, rgba(255, 220, 180, 0.028) 0.5px, transparent 0.6px);
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.025) 0.5px, transparent 0.6px);
   background-size: 22px 22px;
 }
 
@@ -267,7 +266,10 @@ input[type="range"]:focus::-webkit-slider-thumb {
   background: var(--bg-sunk);
   font-family: var(--font-sans-stack);
 }
-.leaflet-tile-pane { filter: none; }
+/* Force B/W tiles regardless of upstream provider */
+.leaflet-tile-pane {
+  filter: grayscale(1) contrast(1.05) brightness(0.92);
+}
 .leaflet-control-attribution {
   background: var(--bg-soft) !important;
   color: var(--fg-faint) !important;
