@@ -73,11 +73,11 @@ export default function ConsolePage() {
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-[var(--bg)] text-[var(--fg)]">
       <Navbar />
       <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto flex max-w-[1480px] flex-col gap-8 px-6 py-7">
+        <div className="mx-auto flex max-w-[1480px] flex-col gap-5 px-4 py-5 sm:gap-7 sm:px-6 sm:py-7">
           {activeCase && (
-            <section className="flex flex-wrap items-baseline gap-x-8 gap-y-2">
+            <section className="flex flex-wrap items-baseline gap-x-6 gap-y-1.5 sm:gap-x-8">
               <h1
-                className="display-tight text-[28px] leading-[1] text-[var(--fg)]"
+                className="display-tight text-[22px] leading-[1] text-[var(--fg)] sm:text-[28px]"
                 style={{ letterSpacing: "-0.035em" }}
               >
                 {activeCase.name}
@@ -135,7 +135,7 @@ export default function ConsolePage() {
                 </span>
               </div>
               <div
-                className="flex flex-wrap items-stretch gap-0 border border-[var(--line)] bg-[var(--bg-soft)]"
+                className="grid grid-cols-1 items-stretch border border-[var(--line)] bg-[var(--bg-soft)] sm:grid-cols-3 xl:grid-cols-[repeat(3,1fr)_auto]"
                 style={{ borderRadius: 6 }}
               >
                 {mission.rows.map((r, i) => {
@@ -146,8 +146,10 @@ export default function ConsolePage() {
                     <div
                       key={r.id}
                       className={
-                        "flex flex-1 flex-col gap-1 px-5 py-3 " +
-                        (i > 0 ? "border-l border-[var(--line)] " : "") +
+                        "flex flex-col gap-1 px-4 py-3 sm:px-5 " +
+                        (i > 0
+                          ? "border-t border-[var(--line)] sm:border-t-0 sm:border-l "
+                          : "") +
                         (active ? "bg-[var(--bg-lift)]" : "")
                       }
                     >
@@ -185,7 +187,7 @@ export default function ConsolePage() {
                     </div>
                   );
                 })}
-                <div className="flex items-baseline gap-3 border-l border-[var(--line-bright)] bg-[var(--bg-lift)] px-6 py-3">
+                <div className="flex items-baseline gap-3 border-t border-[var(--line-bright)] bg-[var(--bg-lift)] px-5 py-3 sm:col-span-3 sm:border-t xl:col-span-1 xl:border-t-0 xl:border-l xl:px-6">
                   <span className="mono text-[10px] uppercase tracking-[0.22em] text-[var(--fg-mute)]">
                     S_total
                   </span>
@@ -203,10 +205,10 @@ export default function ConsolePage() {
             </section>
           )}
 
-          <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.7fr_1fr]">
+          <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1.7fr_1fr] xl:gap-6">
             <Module label="Coverage" variant="live" contentClassName="p-0">
               <ErrorBoundary label="Coverage map">
-                <div className="relative h-[440px] w-full">
+                <div className="relative h-[360px] w-full sm:h-[420px] xl:h-[460px]">
                   <CoverageMap />
                 </div>
               </ErrorBoundary>
@@ -216,14 +218,14 @@ export default function ConsolePage() {
               {result?.simulate ? (
                 <ScoreCard score={result.simulate.score} />
               ) : (
-                <div className="flex h-[400px] items-center justify-center">
+                <div className="flex h-[260px] items-center justify-center sm:h-[400px]">
                   <LoadingState message="Awaiting simulation" />
                 </div>
               )}
             </Module>
           </div>
 
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 lg:gap-6">
             <Module label="Strategy">
               <StrategyPicker />
             </Module>

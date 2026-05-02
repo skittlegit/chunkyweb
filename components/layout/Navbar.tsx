@@ -29,7 +29,7 @@ export function Navbar() {
         {/* Brand */}
         <Link
           href="/"
-          className="flex items-center gap-2.5 border-r border-[var(--line)] px-5"
+          className="flex items-center gap-2.5 border-r border-[var(--line)] px-4 sm:px-5"
         >
           <div className="relative h-2.5 w-2.5">
             <span className="absolute inset-0 bg-[var(--phos)]" aria-hidden />
@@ -44,13 +44,13 @@ export function Navbar() {
           >
             chunkyweb
           </span>
-          <span className="mono text-[9px] uppercase tracking-[0.22em] text-[var(--fg-faint)]">
+          <span className="mono hidden text-[9px] uppercase tracking-[0.22em] text-[var(--fg-faint)] sm:inline">
             v.0.1
           </span>
         </Link>
 
-        {/* Case tabs */}
-        <div className="flex items-stretch">
+        {/* Case tabs — desktop only; mobile gets the second row below. */}
+        <div className="hidden items-stretch md:flex">
           {(cases ?? []).map((c, i) => {
             const active = c.id === selectedCaseId;
             return (
@@ -95,7 +95,7 @@ export function Navbar() {
                   key={l.href}
                   href={l.href}
                   className={cn(
-                    "relative flex items-center px-4 mono text-[10px] uppercase tracking-[0.22em] transition-colors",
+                    "relative flex items-center mono text-[10px] uppercase tracking-[0.18em] transition-colors px-3 sm:px-4 sm:tracking-[0.22em]",
                     active
                       ? "text-[var(--fg)]"
                       : "text-[var(--fg-mute)] hover:text-[var(--fg)]"
@@ -113,7 +113,7 @@ export function Navbar() {
             })}
           </nav>
 
-          <div className="flex items-center gap-3 border-l border-[var(--line)] px-4">
+          <div className="flex items-center gap-3 border-l border-[var(--line)] px-3 sm:px-4">
             <span className="kbd hidden lg:inline">
               <StatusDot
                 status={isRunning ? "warn" : "phos"}
@@ -129,6 +129,43 @@ export function Navbar() {
             />
           </div>
         </div>
+      </div>
+
+      {/* Mobile case tab row — scrollable, single horizontal lane below the
+          brand bar. Renders only below `md`. */}
+      <div className="flex items-stretch overflow-x-auto border-t border-[var(--line)] md:hidden">
+        {(cases ?? []).map((c, i) => {
+          const active = c.id === selectedCaseId;
+          return (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => selectCase(c.id)}
+              className={cn(
+                "relative flex shrink-0 items-center gap-2 border-r border-[var(--line)] px-3 py-2 text-left transition-colors",
+                active
+                  ? "bg-[var(--bg-lift)] text-[var(--fg)]"
+                  : "text-[var(--fg-mute)] hover:bg-[var(--bg-soft)] hover:text-[var(--fg)]"
+              )}
+            >
+              {active && (
+                <span
+                  aria-hidden
+                  className="absolute inset-x-0 top-0 h-[2px] bg-[var(--phos)]"
+                />
+              )}
+              <span className="mono text-[9px] tabular-nums tracking-[0.16em] text-[var(--fg-faint)]">
+                C·{String(i + 1).padStart(2, "0")}
+              </span>
+              <span
+                className="display text-[12px]"
+                style={{ letterSpacing: "-0.012em" }}
+              >
+                {c.name}
+              </span>
+            </button>
+          );
+        })}
       </div>
     </header>
   );

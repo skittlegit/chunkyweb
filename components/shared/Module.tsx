@@ -46,7 +46,7 @@ export function Module({
       )}
     >
       {!bare && (label || tag || actions || hint) && (
-        <header className="flex items-center justify-between gap-4 border-b border-[var(--line)] px-5 py-3">
+        <header className="flex items-center justify-between gap-3 border-b border-[var(--line)] px-4 py-3 sm:gap-4 sm:px-5">
           <div className="flex min-w-0 items-baseline gap-3">
             {label && <span className="eyebrow">{label}</span>}
             {tag && (
@@ -63,7 +63,7 @@ export function Module({
           )}
         </header>
       )}
-      <div className={cn("flex-1 p-5", contentClassName)}>{children}</div>
+      <div className={cn("flex-1 p-4 sm:p-5", contentClassName)}>{children}</div>
     </section>
   );
 }

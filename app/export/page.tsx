@@ -22,11 +22,11 @@ export default function ExportPage() {
     <div className="flex h-screen flex-col overflow-hidden bg-[var(--bg)] text-[var(--fg)]">
       <Navbar />
       <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto flex max-w-[1600px] flex-col gap-5 p-5">
+        <div className="mx-auto flex max-w-[1600px] flex-col gap-5 px-4 py-5 sm:p-5">
           <header className="flex flex-col gap-1 border-b border-[var(--line)] pb-5">
             <span className="kbd">Export</span>
             <h1
-              className="display-tight text-[34px] leading-[0.95]"
+              className="display-tight text-[26px] leading-[0.95] sm:text-[34px]"
               style={{ letterSpacing: "-0.04em" }}
             >
               Schedules &amp; results, ready to copy.

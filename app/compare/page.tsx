@@ -39,12 +39,12 @@ export default function ComparePage() {
     <div className="flex h-screen flex-col overflow-hidden bg-[var(--bg)] text-[var(--fg)]">
       <Navbar />
       <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto flex max-w-[1600px] flex-col gap-5 p-5">
+        <div className="mx-auto flex max-w-[1600px] flex-col gap-5 px-4 py-5 sm:p-5">
           <header className="flex flex-wrap items-end justify-between gap-4 border-b border-[var(--line)] pb-5">
             <div className="flex flex-col gap-1">
               <span className="kbd">Compare</span>
               <h1
-                className="display-tight text-[34px] leading-[0.95]"
+                className="display-tight text-[26px] leading-[0.95] sm:text-[34px]"
                 style={{ letterSpacing: "-0.04em" }}
               >
                 Three passes, one weighted total.

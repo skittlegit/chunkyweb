@@ -27,8 +27,8 @@ export function ScoreCard({ score }: ScoreCardProps) {
         <span className="kbd">S_orbit · per-case score</span>
         <div className="flex items-end gap-3">
           <span
-            className="numeric leading-[0.85] text-[var(--phos)]"
-            style={{ fontSize: 88, letterSpacing: "-0.05em" }}
+            className="numeric leading-[0.85] text-[var(--phos)] text-[64px] sm:text-[88px]"
+            style={{ letterSpacing: "-0.05em" }}
           >
             {v.toFixed(3)}
           </span>

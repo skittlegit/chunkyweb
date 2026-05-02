@@ -51,7 +51,7 @@ export function StatusBar() {
     : "—";
 
   return (
-    <footer className="grid h-9 shrink-0 grid-cols-[auto_auto_auto_auto_1fr_auto] items-stretch border-t border-[var(--line)] bg-[var(--bg)] text-[12px]">
+    <footer className="flex h-9 shrink-0 items-stretch overflow-x-auto border-t border-[var(--line)] bg-[var(--bg)] text-[12px]">
       <Cell>
         <StatusDot status={apiStatus} pulse={apiStatus === "warn"} size={6} />
         <K>api</K>
@@ -61,16 +61,16 @@ export function StatusBar() {
         <K>case</K>
         <V>{selectedCaseId.toUpperCase()}</V>
       </Cell>
-      <Cell>
+      <Cell className="hidden sm:flex">
         <K>tiles</K>
         <V>{tilesValue}</V>
       </Cell>
-      <Cell>
+      <Cell className="hidden md:flex">
         <K>last run</K>
         <V>{lastRun}</V>
       </Cell>
-      <div />
-      <div className="flex items-center gap-3 border-l border-[var(--line)] px-5">
+      <div className="flex-1" />
+      <div className="flex shrink-0 items-center gap-3 border-l border-[var(--line)] px-4 sm:px-5">
         <K>S_orbit</K>
         <span
           className="numeric text-[15px] leading-none text-[var(--phos)]"
@@ -78,17 +78,28 @@ export function StatusBar() {
         >
           {orbitValue}
         </span>
-        <span className="mono text-[10px] tabular-nums text-[var(--fg-faint)]">
-          / 1.000
+        <span className="mono hidden text-[10px] tabular-nums text-[var(--fg-faint)] sm:inline">
+          / 1.350
         </span>
       </div>
     </footer>
   );
 }
 
-function Cell({ children }: { children: React.ReactNode }) {
+function Cell({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <div className="flex items-center gap-2 border-r border-[var(--line)] px-4">
+    <div
+      className={
+        "flex shrink-0 items-center gap-2 border-r border-[var(--line)] px-3 sm:px-4 " +
+        (className ?? "")
+      }
+    >
       {children}
     </div>
   );

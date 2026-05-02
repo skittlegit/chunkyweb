@@ -9,11 +9,11 @@ export default function AboutPage() {
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-[var(--bg)] text-[var(--fg)]">
       <Navbar />
       <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto flex max-w-[920px] flex-col gap-10 px-6 py-12">
+        <div className="mx-auto flex max-w-[920px] flex-col gap-8 px-4 py-8 sm:gap-10 sm:px-6 sm:py-12">
           <header className="flex flex-col gap-3">
             <span className="kbd">About · process</span>
             <h1
-              className="display-tight text-[42px] leading-[0.95] text-[var(--fg)]"
+              className="display-tight text-[30px] leading-[0.95] text-[var(--fg)] sm:text-[42px]"
               style={{ letterSpacing: "-0.04em" }}
             >
               How we built the orbital scheduler.
@@ -45,60 +45,6 @@ export default function AboutPage() {
               />
             </div>
           </header>
-
-          {/* Ideation / process narrative ------------------------------------ */}
-          <Module label="Story" hint="How we ideated and shipped it">
-            <div className="flex flex-col gap-3 text-[13px] leading-relaxed text-[var(--fg-mute)]">
-              <p>
-                The brief was deceptively simple: take a satellite, a 12-minute
-                pass, and a polygon on the ground. Plan an attitude profile
-                that images as much of the polygon as possible without smearing
-                the photos, saturating the reaction wheels, or pointing past a
-                60° off-nadir gate. Score it. Beat the reference.
-              </p>
-              <p>
-                We split the problem in half on day one. One side took the
-                physics — SGP4 propagation, frame conversions, attitude
-                quaternions, the scoring contract. The other side took the
-                interface — a dashboard you could trust to show what the
-                planner was actually doing, frame by frame, instead of a
-                single opaque number.
-              </p>
-              <p>
-                The first plans hit ~0.08 / 1.35 per case. Slews were too
-                aggressive, the wheel momentum integral blew through its 0.200
-                Nms budget, and half the shutters fired with the spacecraft
-                still settling. Three things fixed it: a serpentine tile order
-                so neighbouring shots stayed close, a global argmin scheduler
-                that picks the cheapest (time, tile) pair under the gate
-                instead of greedy left-to-right, and identical-quaternion
-                hold brackets around each 120 ms exposure to satisfy the
-                smear gate without slowing the rest of the trajectory.
-              </p>
-              <p>
-                On the web side the priority was honesty. Every value the UI
-                shows comes from the backend payload — the closest-approach
-                off-nadir is recomputed from SGP4 each load, the per-case
-                score is the raw S_orbit returned by /api/simulate, the
-                frames-kept badge mirrors the planner&rsquo;s own diagnostics.
-                When we discovered the front-end had been hard-coding the
-                wrong contest weights (1.0 / 0.5 / 0.25 instead of 0.25 /
-                0.35 / 0.40), we added a toggle so both numbers stay
-                visible — but the hackathon weights are the default because
-                that&rsquo;s what the grader uses.
-              </p>
-              <p>
-                Case 3 took a day of dead ends. Cross-track distance is
-                roughly 1000 km; the maximum reachable arc from 506 km
-                altitude under a 60° gate is about 1022 km, and the AOI&rsquo;s
-                nearest corner sits a few kilometres past that horizon. After
-                four independent verifications — geometric, harness sweep,
-                wide footprint sweep, and the organiser&rsquo;s own reference
-                solution — we accepted the 0 and stopped trying to exploit it.
-                The ceiling is 0.660. The current solver hits 0.6543.
-              </p>
-            </div>
-          </Module>
 
           {/* Pipeline stages -------------------------------------------------- */}
           <Stage
@@ -173,6 +119,60 @@ export default function AboutPage() {
             ]}
           />
 
+          {/* Story moved below the seven stages — read it after you know the */}
+          {/* shape of the pipeline. */}
+          <Module label="Story" hint="How we ideated and shipped it">
+            <div className="flex flex-col gap-3 text-[13px] leading-relaxed text-[var(--fg-mute)]">
+              <p>
+                The brief was deceptively simple: take a satellite, a 12-minute
+                pass, and a polygon on the ground. Plan an attitude profile
+                that images as much of the polygon as possible without smearing
+                the photos, saturating the reaction wheels, or pointing past a
+                60° off-nadir gate. Score it. Beat the reference.
+              </p>
+              <p>
+                We split the problem in half on day one. One side took the
+                physics — SGP4 propagation, frame conversions, attitude
+                quaternions, the scoring contract. The other side took the
+                interface — a dashboard you could trust to show what the
+                planner was actually doing, frame by frame, instead of a
+                single opaque number.
+              </p>
+              <p>
+                The first plans hit ~0.08 / 1.35 per case. Slews were too
+                aggressive, the wheel momentum integral blew through its 0.200
+                Nms budget, and half the shutters fired with the spacecraft
+                still settling. Three things fixed it: a serpentine tile order
+                so neighbouring shots stayed close, a global argmin scheduler
+                that picks the cheapest (time, tile) pair under the gate
+                instead of greedy left-to-right, and identical-quaternion
+                hold brackets around each 120 ms exposure to satisfy the
+                smear gate without slowing the rest of the trajectory.
+              </p>
+              <p>
+                On the web side the priority was honesty. Every value the UI
+                shows comes from the backend payload — the closest-approach
+                off-nadir is recomputed from SGP4 each load, the per-case
+                score is the raw S_orbit returned by /api/simulate, the
+                frames-kept badge mirrors the planner&rsquo;s own diagnostics.
+                When we discovered the front-end had been hard-coding the
+                wrong contest weights (1.0 / 0.5 / 0.25 instead of 0.25 /
+                0.35 / 0.40), we corrected it to the hackathon weights — those
+                are what the grader uses.
+              </p>
+              <p>
+                Case 3 took a day of dead ends. Cross-track distance is
+                roughly 1000 km; the maximum reachable arc from 506 km
+                altitude under a 60° gate is about 1022 km, and the AOI&rsquo;s
+                nearest corner sits a few kilometres past that horizon. After
+                four independent verifications — geometric, harness sweep,
+                wide footprint sweep, and the organiser&rsquo;s own reference
+                solution — we accepted the 0 and stopped trying to exploit it.
+                The ceiling is 0.660. The current solver hits 0.6543.
+              </p>
+            </div>
+          </Module>
+
           <Module label="Notes" hint="Caveats and known infeasibilities">
             <ul className="flex flex-col gap-3 text-[13px] leading-relaxed text-[var(--fg-mute)]">
               <li>
@@ -236,17 +236,17 @@ function Stage({
   body: string[];
 }) {
   return (
-    <section className="relative grid grid-cols-[60px_1fr] gap-x-5 border-b border-[var(--line)] pb-7">
+    <section className="relative grid grid-cols-[42px_1fr] gap-x-4 border-b border-[var(--line)] pb-6 sm:grid-cols-[60px_1fr] sm:gap-x-5 sm:pb-7">
       <span
         className="numeric leading-none text-[var(--fg-ghost)]"
-        style={{ fontSize: 36, letterSpacing: "-0.04em" }}
+        style={{ fontSize: 30, letterSpacing: "-0.04em" }}
       >
         {n}
       </span>
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-1">
           <h2
-            className="display-tight text-[20px] leading-tight text-[var(--fg)]"
+            className="display-tight text-[18px] leading-tight text-[var(--fg)] sm:text-[20px]"
             style={{ letterSpacing: "-0.025em" }}
           >
             {title}

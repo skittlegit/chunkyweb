@@ -87,6 +87,23 @@ export default function CoverageMapInner() {
     >
       <TileLayer url={DARK_TILE_URL} attribution={DARK_TILE_ATTRIBUTION} />
 
+      {/* Auto-fit the camera to the actual pass geometry on case change.
+          Falls back to the AOI polygon alone when ephemeris hasn't loaded
+          yet, then upgrades to (orbit-inside-window ∪ AOI) once it has. */}
+      <FitToPass
+        caseId={selectedCaseId}
+        aoi={caseConfig?.aoi_polygon}
+        track={insideTrack.length ? insideTrack : orbitTrack}
+        closest={
+          ephemeris?.closest_approach
+            ? [
+                ephemeris.closest_approach.lat_deg,
+                ephemeris.closest_approach.lon_deg,
+              ]
+            : null
+        }
+      />
+
       {caseConfig && caseConfig.aoi_polygon.length > 0 && (
         <Polygon
           positions={caseConfig.aoi_polygon}
@@ -314,4 +331,44 @@ function onaToColor(ona: number): string {
   // Lightness 95% (clean white) → 55% (mid-gray)
   const l = Math.round(95 - t * 40);
   return `hsl(120 8% ${l}%)`;
+}
+
+/* --------------------------------------------------------------
+   FitToPass — re-centres the camera on the actual pass geometry
+   (AOI polygon + orbit track + closest approach) every time the
+   selected case changes or new ephemeris arrives. Renders nothing.
+   -------------------------------------------------------------- */
+function FitToPass({
+  caseId,
+  aoi,
+  track,
+  closest,
+}: {
+  caseId: string;
+  aoi?: [number, number][];
+  track: [number, number][];
+  closest: [number, number] | null;
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    const pts: [number, number][] = [];
+    if (aoi && aoi.length) pts.push(...aoi);
+    if (track.length) pts.push(...track);
+    if (closest) pts.push(closest);
+    if (pts.length < 2) return;
+
+    const bounds = L.latLngBounds(pts);
+    if (!bounds.isValid()) return;
+    map.fitBounds(bounds, {
+      padding: [28, 28],
+      maxZoom: 8,
+      animate: false,
+    });
+    // Only re-fit on case change or when ephemeris first arrives — track
+    // length is the cheapest stable proxy for "data ready".
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [caseId, track.length, !!aoi?.length, !!closest, map]);
+
+  return null;
 }
