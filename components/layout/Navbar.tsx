@@ -4,10 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
-import { useAppStore } from "@/store/useAppStore";
-import { useRunPass } from "@/hooks/useRunPass";
-import { RunButton } from "@/components/controls/RunButton";
-import { StatusDot } from "@/components/shared/StatusDot";
 import { cn } from "@/lib/cn";
 
 const NAV = [
@@ -19,17 +15,8 @@ const NAV = [
 
 export function Navbar() {
   const pathname = usePathname();
-  const selectedCaseId = useAppStore((s) => s.selectedCaseId);
-  const { run, isRunning } = useRunPass();
-  // Track which pathname the menu was opened against; if navigation
-  // changes the path, we treat the menu as closed without firing a
-  // state update inside an effect.
   const [openOn, setOpenOn] = useState<string | null>(null);
   const menuOpen = openOn === pathname;
-
-  // The Run button only does anything for a real case id; in "all" mode
-  // there's no case to plan, so we hide it rather than show a dead button.
-  const canRun = selectedCaseId !== "all";
 
   return (
     <header className="relative z-30 shrink-0 border-b border-[var(--line)] bg-[var(--bg)]">
@@ -59,8 +46,7 @@ export function Navbar() {
 
         <div className="ml-auto flex items-stretch">
           {/* Desktop nav */}
-          <nav className="hidden items-stretch border-l border-[var(--line)] md:flex">
-            {NAV.map((l) => {
+          <nav className="hidden items-stretch border-l border-[var(--line)] md:flex">            {NAV.map((l) => {
               const active = pathname === l.href;
               return (
                 <Link
@@ -84,26 +70,6 @@ export function Navbar() {
               );
             })}
           </nav>
-
-          {/* Run group — desktop. Hidden on mobile (hamburger panel hosts
-              the run controls instead, freeing the bar for nav-only). */}
-          {canRun && (
-            <div className="hidden items-center gap-3 border-l border-[var(--line)] px-4 md:flex">
-              <span className="kbd hidden lg:inline">
-                <StatusDot
-                  status={isRunning ? "warn" : "phos"}
-                  pulse={isRunning}
-                  className="mr-1.5 align-middle"
-                />
-                {isRunning ? "TRANSMIT" : "STANDBY"}
-              </span>
-              <RunButton
-                size="sm"
-                onClick={() => run(selectedCaseId)}
-                loading={isRunning}
-              />
-            </div>
-          )}
 
           {/* Mobile: hamburger toggle. Always visible <md. */}
           <button
@@ -145,26 +111,6 @@ export function Navbar() {
                 </Link>
               );
             })}
-            {canRun && (
-              <div className="flex items-center justify-between gap-3 border-b border-[var(--line)] px-5 py-3">
-                <span className="kbd">
-                  <StatusDot
-                    status={isRunning ? "warn" : "phos"}
-                    pulse={isRunning}
-                    className="mr-1.5 align-middle"
-                  />
-                  {isRunning ? "TRANSMIT" : "STANDBY"}
-                </span>
-                <RunButton
-                  size="sm"
-                  onClick={() => {
-                    run(selectedCaseId);
-                    setOpenOn(null);
-                  }}
-                  loading={isRunning}
-                />
-              </div>
-            )}
           </nav>
         </div>
       )}

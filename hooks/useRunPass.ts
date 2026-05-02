@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useAppStore } from "@/store/useAppStore";
 import { usePlan } from "@/hooks/usePlan";
 import { useSimulate } from "@/hooks/useSimulate";
@@ -17,6 +18,9 @@ export function useRunPass() {
   const settleMargin = useAppStore((s) => s.settleMargin);
   const offNadirMargin = useAppStore((s) => s.offNadirMargin);
   const setCaseResult = useAppStore((s) => s.setCaseResult);
+
+  // Tracks which case is currently running when using runAll.
+  const [runningAllCaseId, setRunningAllCaseId] = useState<string | null>(null);
 
   const run = async (caseId: string) => {
     const start = performance.now();
@@ -60,6 +64,14 @@ export function useRunPass() {
 
   return {
     run,
+    runAll: async (caseIds: string[]) => {
+      for (const caseId of caseIds) {
+        setRunningAllCaseId(caseId);
+        await run(caseId);
+      }
+      setRunningAllCaseId(null);
+    },
+    runningAllCaseId,
     isRunning: planMutation.isPending || simulateMutation.isPending,
     error: planMutation.error ?? simulateMutation.error,
     reset: () => {

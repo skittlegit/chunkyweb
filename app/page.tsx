@@ -15,11 +15,14 @@ import { FrameTable } from "@/components/score/FrameTable";
 import { PassTimeline } from "@/components/timeline/PassTimeline";
 import { StrategyPicker } from "@/components/controls/StrategyPicker";
 import { ParameterSliders } from "@/components/controls/ParameterSliders";
+import { RunButton } from "@/components/controls/RunButton";
+import { StatusDot } from "@/components/shared/StatusDot";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import {
   DIFFICULTY_COLOR,
   DIFFICULTY_LABEL,
+  S_ORBIT_MAX,
   WEIGHT_SCHEMES,
 } from "@/lib/constants";
 
@@ -29,10 +32,11 @@ export default function ConsolePage() {
   const selectCase = useAppStore((s) => s.selectCase);
   const results = useAppStore((s) => s.results);
   const result = results[selectedCaseId];
-  const { error } = useRunPass();
+  const { run, runAll, runningAllCaseId, isRunning, error } = useRunPass();
   const [framesOpen, setFramesOpen] = useState(false);
 
   const isOverview = selectedCaseId === "all";
+  const isRunningAll = runningAllCaseId !== null;
 
   const activeCase = useMemo(
     () => (cases ?? []).find((c) => c.id === selectedCaseId),
@@ -110,45 +114,71 @@ export default function ConsolePage() {
           </section>
 
           {activeCase && (
-            <section className="flex flex-wrap items-baseline gap-x-6 gap-y-1.5 sm:gap-x-8">
-              <h1
-                className="display-tight text-[22px] leading-[1] text-[var(--fg)] sm:text-[28px]"
-                style={{ letterSpacing: "-0.035em" }}
-              >
-                {activeCase.name}
-              </h1>
-              <span className="mono text-[11px] tabular-nums text-[var(--fg-mute)]">
-                {new Date(activeCase.pass_start_utc)
-                  .toUTCString()
-                  .slice(17, 25)}
-                Z
-              </span>
-              <span className="mono text-[11px] text-[var(--fg-faint)]">
-                ONA min{" "}
-                {typeof closestOna === "number"
-                  ? `${closestOna.toFixed(2)}°`
-                  : "—"}
-              </span>
-              <span className="mono text-[11px] text-[var(--fg-faint)]">
-                w {(scheme.weights[activeCase.id] ?? activeCase.weight).toFixed(2)}
-              </span>
-              {typeof onaLimit === "number" && (
-                <span className="mono text-[11px] text-[var(--fg-faint)]">
-                  gate ≤ {onaLimit.toFixed(1)}°
+            <>
+              <section className="flex flex-wrap items-baseline gap-x-6 gap-y-1.5 sm:gap-x-8">
+                <h1
+                  className="display-tight text-[22px] leading-[1] text-[var(--fg)] sm:text-[28px]"
+                  style={{ letterSpacing: "-0.035em" }}
+                >
+                  {activeCase.name}
+                </h1>
+                <span className="mono text-[11px] tabular-nums text-[var(--fg-mute)]">
+                  {new Date(activeCase.pass_start_utc)
+                    .toUTCString()
+                    .slice(17, 25)}
+                  Z
                 </span>
-              )}
-              {planDiag && typeof planDiag.n_tiles_total === "number" && (
                 <span className="mono text-[11px] text-[var(--fg-faint)]">
-                  {planDiag.n_tiles_imaged}/{planDiag.n_tiles_total} kept
+                  ONA min{" "}
+                  {typeof closestOna === "number"
+                    ? `${closestOna.toFixed(2)}°`
+                    : "—"}
                 </span>
-              )}
-              <span
-                className="mono text-[11px]"
-                style={{ color: DIFFICULTY_COLOR[activeCase.difficulty] }}
-              >
-                {DIFFICULTY_LABEL[activeCase.difficulty].toLowerCase()}
-              </span>
-            </section>
+                <span className="mono text-[11px] text-[var(--fg-faint)]">
+                  w {(scheme.weights[activeCase.id] ?? activeCase.weight).toFixed(2)}
+                </span>
+                {typeof onaLimit === "number" && (
+                  <span className="mono text-[11px] text-[var(--fg-faint)]">
+                    gate ≤ {onaLimit.toFixed(1)}°
+                  </span>
+                )}
+                {planDiag && typeof planDiag.n_tiles_total === "number" && (
+                  <span className="mono text-[11px] text-[var(--fg-faint)]">
+                    {planDiag.n_tiles_imaged}/{planDiag.n_tiles_total} kept
+                  </span>
+                )}
+                <span
+                  className="mono text-[11px]"
+                  style={{ color: DIFFICULTY_COLOR[activeCase.difficulty] }}
+                >
+                  {DIFFICULTY_LABEL[activeCase.difficulty].toLowerCase()}
+                </span>
+              </section>
+
+              {/* Per-case Run action bar */}
+              <div className="flex items-center gap-3 border border-[var(--line)] bg-[var(--bg-soft)] px-4 py-2.5 sm:px-5" style={{ borderRadius: 6 }}>
+                <StatusDot
+                  status={isRunning ? "warn" : "phos"}
+                  pulse={isRunning}
+                />
+                <span className="mono text-[10px] uppercase tracking-[0.22em] text-[var(--fg-mute)]">
+                  {isRunning ? "Transmitting" : "Standby"}
+                </span>
+                <span className="mono text-[10px] tabular-nums text-[var(--fg-faint)]">
+                  ·
+                </span>
+                <span className="mono text-[10px] tabular-nums text-[var(--fg-faint)]">
+                  {selectedCaseId.toUpperCase()}
+                </span>
+                <div className="ml-auto">
+                  <RunButton
+                    size="sm"
+                    onClick={() => run(selectedCaseId)}
+                    loading={isRunning}
+                  />
+                </div>
+              </div>
+            </>
           )}
 
           {error && (
@@ -241,14 +271,140 @@ export default function ConsolePage() {
           )}
 
           {isOverview ? (
-            <Module label="Overview" hint="Pick a case above to inspect">
-              <p className="text-[13px] leading-relaxed text-[var(--fg-mute)]">
-                The mission strip up top shows the weighted total across all
-                three cases. Pick a specific case to drop into the coverage
-                map, score card, strategy controls and per-shutter timeline
-                for that pass.
-              </p>
-            </Module>
+            <>
+              {/* Run All action bar */}
+              <div
+                className="flex flex-wrap items-center gap-3 border border-[var(--line)] bg-[var(--bg-soft)] px-4 py-3 sm:px-5"
+                style={{ borderRadius: 6 }}
+              >
+                <div className="flex items-center gap-2">
+                  <StatusDot
+                    status={isRunningAll ? "warn" : "phos"}
+                    pulse={isRunningAll}
+                  />
+                  <span className="mono text-[10px] uppercase tracking-[0.22em] text-[var(--fg-mute)]">
+                    {isRunningAll
+                      ? `Running ${runningAllCaseId?.toUpperCase() ?? "…"}`
+                      : "All cases · standby"}
+                  </span>
+                </div>
+                <div className="ml-auto flex items-center gap-3">
+                  <span className="mono hidden text-[10px] text-[var(--fg-faint)] sm:inline">
+                    Runs Case 1 → 2 → 3 sequentially
+                  </span>
+                  <RunButton
+                    size="sm"
+                    label="Run All"
+                    loadingLabel="Running…"
+                    onClick={() =>
+                      runAll((cases ?? []).map((c) => c.id))
+                    }
+                    loading={isRunningAll}
+                    disabled={isRunning || !cases?.length}
+                  />
+                </div>
+              </div>
+
+              {/* Per-case breakdown table */}
+              <Module label="Mission Breakdown" hint="Score components per case">
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[520px] border-collapse text-[12px]">
+                    <thead>
+                      <tr className="border-b border-[var(--line)]">
+                        {["Case", "Difficulty", "Pass UTC", "Weight", "C", "η_E", "η_T", "Q_smear", "S_orbit", "/ max", "Frames", "Status"].map((h) => (
+                          <th
+                            key={h}
+                            className="mono pb-2 pr-4 text-left text-[10px] uppercase tracking-[0.18em] text-[var(--fg-faint)] last:pr-0"
+                          >
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(cases ?? []).map((c, i) => {
+                        const r = results[c.id];
+                        const score = r?.simulate?.score;
+                        const diag = r?.plan?.diagnostics;
+                        const isActive = runningAllCaseId === c.id;
+                        return (
+                          <tr
+                            key={c.id}
+                            className={
+                              "border-b border-[var(--line)] transition-colors " +
+                              (isActive ? "bg-[var(--bg-lift)]" : "")
+                            }
+                          >
+                            <td className="py-2.5 pr-4">
+                              <div className="flex items-center gap-2">
+                                {isActive && (
+                                  <StatusDot status="warn" pulse className="shrink-0" />
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => selectCase(c.id)}
+                                  className="mono text-[11px] tabular-nums text-[var(--phos)] hover:underline"
+                                >
+                                  C·{String(i + 1).padStart(2, "0")}
+                                </button>
+                              </div>
+                            </td>
+                            <td className="py-2.5 pr-4">
+                              <span
+                                className="mono text-[10px]"
+                                style={{ color: DIFFICULTY_COLOR[c.difficulty] }}
+                              >
+                                {DIFFICULTY_LABEL[c.difficulty].toLowerCase()}
+                              </span>
+                            </td>
+                            <td className="mono py-2.5 pr-4 tabular-nums text-[var(--fg-mute)]">
+                              {new Date(c.pass_start_utc).toUTCString().slice(17, 25)}Z
+                            </td>
+                            <td className="mono py-2.5 pr-4 tabular-nums text-[var(--fg-faint)]">
+                              {(scheme.weights[c.id] ?? c.weight).toFixed(2)}
+                            </td>
+                            {(["C", "eta_E", "eta_T", "Q_smear"] as const).map((k) => (
+                              <td key={k} className="mono py-2.5 pr-4 tabular-nums text-[var(--fg-mute)]">
+                                {score ? score[k].toFixed(3) : "—"}
+                              </td>
+                            ))}
+                            <td className="mono py-2.5 pr-4 tabular-nums font-medium text-[var(--fg)]">
+                              {score ? score.S_orbit.toFixed(3) : "—"}
+                            </td>
+                            <td className="py-2.5 pr-4">
+                              {score ? (
+                                <div className="flex h-1.5 w-16 overflow-hidden rounded-sm bg-[var(--bg-lift)]">
+                                  <div
+                                    className="h-full bg-[var(--phos)]"
+                                    style={{ width: `${(Math.min(score.S_orbit / S_ORBIT_MAX, 1) * 100).toFixed(1)}%` }}
+                                  />
+                                </div>
+                              ) : (
+                                <div className="h-1.5 w-16 rounded-sm bg-[var(--line)]" />
+                              )}
+                            </td>
+                            <td className="mono py-2.5 pr-4 tabular-nums text-[var(--fg-faint)]">
+                              {diag && typeof diag.n_tiles_total === "number"
+                                ? `${diag.n_tiles_imaged}/${diag.n_tiles_total}`
+                                : "—"}
+                            </td>
+                            <td className="mono py-2.5 tabular-nums">
+                              {isActive ? (
+                                <span className="text-[var(--warn)]">running</span>
+                              ) : score ? (
+                                <span className="text-[var(--phos)]">done</span>
+                              ) : (
+                                <span className="text-[var(--fg-faint)]">pending</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </Module>
+            </>
           ) : (
             <>
               <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1.7fr_1fr] xl:gap-6">
