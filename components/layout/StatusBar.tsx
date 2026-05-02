@@ -59,7 +59,7 @@ export function StatusBar() {
       </Cell>
       <Cell>
         <K>case</K>
-        <V>{selectedCaseId.toUpperCase()}</V>
+        <V>{selectedCaseId === "all" ? "ALL" : selectedCaseId.toUpperCase()}</V>
       </Cell>
       <Cell className="hidden sm:flex">
         <K>tiles</K>

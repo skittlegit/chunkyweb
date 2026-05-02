@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCases } from "@/hooks/useCases";
+import { useState } from "react";
+import { Menu, X } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import { useRunPass } from "@/hooks/useRunPass";
 import { RunButton } from "@/components/controls/RunButton";
@@ -18,10 +19,17 @@ const NAV = [
 
 export function Navbar() {
   const pathname = usePathname();
-  const { data: cases } = useCases();
   const selectedCaseId = useAppStore((s) => s.selectedCaseId);
-  const selectCase = useAppStore((s) => s.selectCase);
   const { run, isRunning } = useRunPass();
+  // Track which pathname the menu was opened against; if navigation
+  // changes the path, we treat the menu as closed without firing a
+  // state update inside an effect.
+  const [openOn, setOpenOn] = useState<string | null>(null);
+  const menuOpen = openOn === pathname;
+
+  // The Run button only does anything for a real case id; in "all" mode
+  // there's no case to plan, so we hide it rather than show a dead button.
+  const canRun = selectedCaseId !== "all";
 
   return (
     <header className="relative z-30 shrink-0 border-b border-[var(--line)] bg-[var(--bg)]">
@@ -49,45 +57,9 @@ export function Navbar() {
           </span>
         </Link>
 
-        {/* Case tabs — desktop only; mobile gets the second row below. */}
-        <div className="hidden items-stretch md:flex">
-          {(cases ?? []).map((c, i) => {
-            const active = c.id === selectedCaseId;
-            return (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => selectCase(c.id)}
-                className={cn(
-                  "group relative flex items-center gap-3 border-r border-[var(--line)] px-4 text-left transition-colors",
-                  active
-                    ? "bg-[var(--bg-lift)] text-[var(--fg)]"
-                    : "text-[var(--fg-mute)] hover:bg-[var(--bg-soft)] hover:text-[var(--fg)]"
-                )}
-              >
-                {active && (
-                  <span
-                    aria-hidden
-                    className="absolute inset-x-0 top-0 h-[2px] bg-[var(--phos)]"
-                  />
-                )}
-                <span className="mono text-[10px] tabular-nums tracking-[0.16em] text-[var(--fg-faint)]">
-                  C·{String(i + 1).padStart(2, "0")}
-                </span>
-                <span
-                  className="display text-[13px]"
-                  style={{ letterSpacing: "-0.012em" }}
-                >
-                  {c.name}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Right group */}
         <div className="ml-auto flex items-stretch">
-          <nav className="flex items-stretch border-l border-[var(--line)]">
+          {/* Desktop nav */}
+          <nav className="hidden items-stretch border-l border-[var(--line)] md:flex">
             {NAV.map((l) => {
               const active = pathname === l.href;
               return (
@@ -95,7 +67,7 @@ export function Navbar() {
                   key={l.href}
                   href={l.href}
                   className={cn(
-                    "relative flex items-center mono text-[10px] uppercase tracking-[0.18em] transition-colors px-3 sm:px-4 sm:tracking-[0.22em]",
+                    "relative flex items-center px-4 mono text-[10px] uppercase tracking-[0.22em] transition-colors",
                     active
                       ? "text-[var(--fg)]"
                       : "text-[var(--fg-mute)] hover:text-[var(--fg)]"
@@ -113,60 +85,89 @@ export function Navbar() {
             })}
           </nav>
 
-          <div className="flex items-center gap-3 border-l border-[var(--line)] px-3 sm:px-4">
-            <span className="kbd hidden lg:inline">
-              <StatusDot
-                status={isRunning ? "warn" : "phos"}
-                pulse={isRunning}
-                className="mr-1.5 align-middle"
+          {/* Run group — desktop. Hidden on mobile (hamburger panel hosts
+              the run controls instead, freeing the bar for nav-only). */}
+          {canRun && (
+            <div className="hidden items-center gap-3 border-l border-[var(--line)] px-4 md:flex">
+              <span className="kbd hidden lg:inline">
+                <StatusDot
+                  status={isRunning ? "warn" : "phos"}
+                  pulse={isRunning}
+                  className="mr-1.5 align-middle"
+                />
+                {isRunning ? "TRANSMIT" : "STANDBY"}
+              </span>
+              <RunButton
+                size="sm"
+                onClick={() => run(selectedCaseId)}
+                loading={isRunning}
               />
-              {isRunning ? "TRANSMIT" : "STANDBY"}
-            </span>
-            <RunButton
-              size="sm"
-              onClick={() => run(selectedCaseId)}
-              loading={isRunning}
-            />
-          </div>
+            </div>
+          )}
+
+          {/* Mobile: hamburger toggle. Always visible <md. */}
+          <button
+            type="button"
+            onClick={() => setOpenOn(menuOpen ? null : pathname)}
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={menuOpen}
+            className="flex items-center border-l border-[var(--line)] px-4 text-[var(--fg-mute)] transition-colors hover:text-[var(--fg)] md:hidden"
+          >
+            {menuOpen ? <X size={16} /> : <Menu size={16} />}
+          </button>
         </div>
       </div>
 
-      {/* Mobile case tab row — scrollable, single horizontal lane below the
-          brand bar. Renders only below `md`. */}
-      <div className="flex items-stretch overflow-x-auto border-t border-[var(--line)] md:hidden">
-        {(cases ?? []).map((c, i) => {
-          const active = c.id === selectedCaseId;
-          return (
-            <button
-              key={c.id}
-              type="button"
-              onClick={() => selectCase(c.id)}
-              className={cn(
-                "relative flex shrink-0 items-center gap-2 border-r border-[var(--line)] px-3 py-2 text-left transition-colors",
-                active
-                  ? "bg-[var(--bg-lift)] text-[var(--fg)]"
-                  : "text-[var(--fg-mute)] hover:bg-[var(--bg-soft)] hover:text-[var(--fg)]"
-              )}
-            >
-              {active && (
-                <span
-                  aria-hidden
-                  className="absolute inset-x-0 top-0 h-[2px] bg-[var(--phos)]"
+      {/* Mobile dropdown — anchored under the bar, full-width. */}
+      {menuOpen && (
+        <div className="border-t border-[var(--line)] bg-[var(--bg)] md:hidden">
+          <nav className="flex flex-col">
+            {NAV.map((l) => {
+              const active = pathname === l.href;
+              return (
+                <Link
+                  key={l.href}
+                  href={l.href}
+                  className={cn(
+                    "mono flex items-center justify-between border-b border-[var(--line)] px-5 py-3 text-[11px] uppercase tracking-[0.22em] transition-colors",
+                    active
+                      ? "bg-[var(--bg-lift)] text-[var(--fg)]"
+                      : "text-[var(--fg-mute)] hover:bg-[var(--bg-soft)] hover:text-[var(--fg)]"
+                  )}
+                >
+                  <span>{l.label}</span>
+                  {active && (
+                    <span
+                      aria-hidden
+                      className="h-1.5 w-1.5 bg-[var(--phos)]"
+                    />
+                  )}
+                </Link>
+              );
+            })}
+            {canRun && (
+              <div className="flex items-center justify-between gap-3 border-b border-[var(--line)] px-5 py-3">
+                <span className="kbd">
+                  <StatusDot
+                    status={isRunning ? "warn" : "phos"}
+                    pulse={isRunning}
+                    className="mr-1.5 align-middle"
+                  />
+                  {isRunning ? "TRANSMIT" : "STANDBY"}
+                </span>
+                <RunButton
+                  size="sm"
+                  onClick={() => {
+                    run(selectedCaseId);
+                    setOpenOn(null);
+                  }}
+                  loading={isRunning}
                 />
-              )}
-              <span className="mono text-[9px] tabular-nums tracking-[0.16em] text-[var(--fg-faint)]">
-                C·{String(i + 1).padStart(2, "0")}
-              </span>
-              <span
-                className="display text-[12px]"
-                style={{ letterSpacing: "-0.012em" }}
-              >
-                {c.name}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+              </div>
+            )}
+          </nav>
+        </div>
+      )}
     </header>
   );
 }

@@ -34,7 +34,10 @@ interface AppStore {
 
 
 export const useAppStore = create<AppStore>((set) => ({
-  selectedCaseId: "case1",
+  // "all" is a sentinel meaning "no specific case picked" — the Console
+  // shows the mission overview and prompts the user to pick a case before
+  // any per-case panels render. Real ids are case1 / case2 / case3.
+  selectedCaseId: "all",
   selectedTileId: null,
   selectedFrameIndex: null,
   strategy: "boustrophedon",

@@ -26,10 +26,13 @@ import {
 export default function ConsolePage() {
   const { data: cases } = useCases();
   const selectedCaseId = useAppStore((s) => s.selectedCaseId);
+  const selectCase = useAppStore((s) => s.selectCase);
   const results = useAppStore((s) => s.results);
   const result = results[selectedCaseId];
   const { error } = useRunPass();
   const [framesOpen, setFramesOpen] = useState(false);
+
+  const isOverview = selectedCaseId === "all";
 
   const activeCase = useMemo(
     () => (cases ?? []).find((c) => c.id === selectedCaseId),
@@ -74,6 +77,38 @@ export default function ConsolePage() {
       <Navbar />
       <main className="flex-1 overflow-y-auto">
         <div className="mx-auto flex max-w-[1480px] flex-col gap-5 px-4 py-5 sm:gap-7 sm:px-6 sm:py-7">
+          {/* Cases tab strip — `All` first, then each case. Lives inside the
+              Console page (not the navbar) so it doesn't crowd the global
+              chrome. Mobile: horizontally scrollable lane. */}
+          <section className="flex flex-col gap-2">
+            <div className="flex items-baseline justify-between">
+              <span className="kbd">Cases</span>
+              <span className="mono hidden text-[10px] uppercase tracking-[0.18em] text-[var(--fg-faint)] sm:inline">
+                pick one to inspect — or stay on All for the mission overview
+              </span>
+            </div>
+            <div
+              className="flex items-stretch overflow-x-auto border border-[var(--line)] bg-[var(--bg-soft)]"
+              style={{ borderRadius: 6 }}
+            >
+              <CaseTab
+                active={isOverview}
+                onClick={() => selectCase("all")}
+                code="ALL"
+                label="Overview"
+              />
+              {(cases ?? []).map((c, i) => (
+                <CaseTab
+                  key={c.id}
+                  active={c.id === selectedCaseId}
+                  onClick={() => selectCase(c.id)}
+                  code={`C·${String(i + 1).padStart(2, "0")}`}
+                  label={c.name}
+                />
+              ))}
+            </div>
+          </section>
+
           {activeCase && (
             <section className="flex flex-wrap items-baseline gap-x-6 gap-y-1.5 sm:gap-x-8">
               <h1
@@ -205,72 +240,136 @@ export default function ConsolePage() {
             </section>
           )}
 
-          <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1.7fr_1fr] xl:gap-6">
-            <Module label="Coverage" variant="live" contentClassName="p-0">
-              <ErrorBoundary label="Coverage map">
-                <div className="relative h-[360px] w-full sm:h-[420px] xl:h-[460px]">
-                  <CoverageMap />
-                </div>
-              </ErrorBoundary>
-            </Module>
-
-            <Module label="Score" variant={result?.simulate ? "on" : "default"}>
-              {result?.simulate ? (
-                <ScoreCard score={result.simulate.score} />
-              ) : (
-                <div className="flex h-[260px] items-center justify-center sm:h-[400px]">
-                  <LoadingState message="Awaiting simulation" />
-                </div>
-              )}
-            </Module>
-          </div>
-
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 lg:gap-6">
-            <Module label="Strategy">
-              <StrategyPicker />
-            </Module>
-            <Module label="Margins">
-              <ParameterSliders />
-            </Module>
-          </div>
-
-          <Module label="Timeline" hint="Off-nadir angle and shutter intervals">
-            <ErrorBoundary label="Pass timeline">
-              <PassTimeline />
-            </ErrorBoundary>
-          </Module>
-
-          <Module
-            label="Frames"
-            hint={
-              result?.simulate
-                ? `${result.simulate.per_frame.length} shutters recorded`
-                : "Awaiting simulation"
-            }
-            actions={
-              <button
-                type="button"
-                onClick={() => setFramesOpen((o) => !o)}
-                className="mono border border-[var(--line-bright)] bg-transparent px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-[var(--fg-mute)] transition-colors hover:border-[var(--phos)] hover:text-[var(--phos)]"
-                style={{ borderRadius: 2 }}
-              >
-                {framesOpen ? "Hide" : "Inspect"}
-              </button>
-            }
-          >
-            {framesOpen && result?.simulate ? (
-              <FrameTable frames={result.simulate.per_frame} />
-            ) : (
-              <p className="text-[12px] italic text-[var(--fg-mute)]">
-                {result?.simulate
-                  ? "Click Inspect to expand the per-shutter gate table."
-                  : "Run a pass to populate."}
+          {isOverview ? (
+            <Module label="Overview" hint="Pick a case above to inspect">
+              <p className="text-[13px] leading-relaxed text-[var(--fg-mute)]">
+                The mission strip up top shows the weighted total across all
+                three cases. Pick a specific case to drop into the coverage
+                map, score card, strategy controls and per-shutter timeline
+                for that pass.
               </p>
-            )}
-          </Module>
+            </Module>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1.7fr_1fr] xl:gap-6">
+                <Module
+                  label="Coverage"
+                  variant="live"
+                  contentClassName="p-0"
+                >
+                  <ErrorBoundary label="Coverage map">
+                    <div className="relative h-[360px] w-full sm:h-[420px] xl:h-[460px]">
+                      <CoverageMap />
+                    </div>
+                  </ErrorBoundary>
+                </Module>
+
+                <Module
+                  label="Score"
+                  variant={result?.simulate ? "on" : "default"}
+                >
+                  {result?.simulate ? (
+                    <ScoreCard score={result.simulate.score} />
+                  ) : (
+                    <div className="flex h-[260px] items-center justify-center sm:h-[400px]">
+                      <LoadingState message="Awaiting simulation" />
+                    </div>
+                  )}
+                </Module>
+              </div>
+
+              <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 lg:gap-6">
+                <Module label="Strategy">
+                  <StrategyPicker />
+                </Module>
+                <Module label="Margins">
+                  <ParameterSliders />
+                </Module>
+              </div>
+
+              <Module
+                label="Timeline"
+                hint="Off-nadir angle and shutter intervals"
+              >
+                <ErrorBoundary label="Pass timeline">
+                  <PassTimeline />
+                </ErrorBoundary>
+              </Module>
+
+              <Module
+                label="Frames"
+                hint={
+                  result?.simulate
+                    ? `${result.simulate.per_frame.length} shutters recorded`
+                    : "Awaiting simulation"
+                }
+                actions={
+                  <button
+                    type="button"
+                    onClick={() => setFramesOpen((o) => !o)}
+                    className="mono border border-[var(--line-bright)] bg-transparent px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-[var(--fg-mute)] transition-colors hover:border-[var(--phos)] hover:text-[var(--phos)]"
+                    style={{ borderRadius: 2 }}
+                  >
+                    {framesOpen ? "Hide" : "Inspect"}
+                  </button>
+                }
+              >
+                {framesOpen && result?.simulate ? (
+                  <FrameTable frames={result.simulate.per_frame} />
+                ) : (
+                  <p className="text-[12px] italic text-[var(--fg-mute)]">
+                    {result?.simulate
+                      ? "Click Inspect to expand the per-shutter gate table."
+                      : "Run a pass to populate."}
+                  </p>
+                )}
+              </Module>
+            </>
+          )}
         </div>
       </main>
       <StatusBar />
     </div>
+  );
+}
+
+function CaseTab({
+  active,
+  onClick,
+  code,
+  label,
+}: {
+  active: boolean;
+  onClick: () => void;
+  code: string;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={
+        "relative flex shrink-0 items-baseline gap-2.5 border-r border-[var(--line)] px-4 py-2.5 text-left transition-colors last:border-r-0 sm:px-5 sm:py-3 " +
+        (active
+          ? "bg-[var(--bg-lift)] text-[var(--fg)]"
+          : "text-[var(--fg-mute)] hover:bg-[var(--bg-soft)] hover:text-[var(--fg)]")
+      }
+    >
+      {active && (
+        <span
+          aria-hidden
+          className="absolute inset-x-0 top-0 h-[2px] bg-[var(--phos)]"
+        />
+      )}
+      <span className="mono text-[10px] tabular-nums tracking-[0.16em] text-[var(--fg-faint)]">
+        {code}
+      </span>
+      <span
+        className="display text-[13px]"
+        style={{ letterSpacing: "-0.012em" }}
+      >
+        {label}
+      </span>
+    </button>
   );
 }
