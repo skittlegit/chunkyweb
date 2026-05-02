@@ -9,7 +9,7 @@ export default function AboutPage() {
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-[var(--bg)] text-[var(--fg)]">
       <Navbar />
       <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto flex max-w-[920px] flex-col gap-6 px-5 py-5 sm:gap-8 sm:px-6 sm:py-8">
+        <div className="mx-auto flex max-w-[1440px] flex-col gap-6 px-5 py-5 sm:gap-8 sm:px-6 sm:py-8">
           <header className="flex flex-col gap-3">
             <span className="kbd">About · process</span>
             <h1
