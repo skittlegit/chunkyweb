@@ -28,6 +28,7 @@ interface AppStore {
   setCaseResult: (id: string, result: CaseRunResult) => void;
 }
 
+
 export const useAppStore = create<AppStore>((set) => ({
   selectedCaseId: "case1",
   selectedTileId: null,

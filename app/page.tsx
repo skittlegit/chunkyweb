@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useAppStore } from "@/store/useAppStore";
 import { useCases } from "@/hooks/useCases";
+import { useEphemeris } from "@/hooks/useEphemeris";
 import { useRunPass } from "@/hooks/useRunPass";
 import { Navbar } from "@/components/layout/Navbar";
 import { StatusBar } from "@/components/layout/StatusBar";
@@ -31,8 +32,17 @@ export default function ConsolePage() {
     [cases, selectedCaseId]
   );
 
+  // Real closest-approach off-nadir from the backend ephemeris — this is the
+  // actual minimum off-nadir-to-AOI-center over the 720 s pass, computed by
+  // chunkyapi from SGP4 + AOI centroid. Replaces the previous hard-coded
+  // estimate (which was wrong for all three cases).
+  const { data: ephemeris } = useEphemeris(selectedCaseId);
+  const closestOna = ephemeris?.closest_approach?.min_off_nadir_deg;
+
   // Mission total — weighted sum across all cases that have simulated.
-  // S_total = Σ (S_orbit_i × weight_i) / Σ weight_i over completed cases.
+  // Per chunkyapi/HANDOFF.md: `S_total = 0.25·S₁ + 0.35·S₂ + 0.40·S₃`. The
+  // weights are absolute (they already sum to 1.0), not normalised. Cases
+  // that haven't simulated yet contribute 0 — match what the grader does.
   const mission = useMemo(() => {
     if (!cases?.length) return null;
     const rows = cases.map((c) => {
@@ -44,11 +54,12 @@ export default function ConsolePage() {
         S: typeof r === "number" && Number.isFinite(r) ? r : null,
       };
     });
-    const done = rows.filter((r) => r.S !== null);
-    const wSum = done.reduce((a, r) => a + r.weight, 0);
-    const sSum = done.reduce((a, r) => a + (r.S as number) * r.weight, 0);
-    const S_total = wSum > 0 ? sSum / wSum : null;
-    return { rows, done: done.length, total: rows.length, S_total };
+    const done = rows.filter((r) => r.S !== null).length;
+    const S_total = rows.reduce(
+      (a, r) => a + r.weight * (r.S ?? 0),
+      0
+    );
+    return { rows, done, total: rows.length, S_total };
   }, [cases, results]);
 
   return (
@@ -71,10 +82,13 @@ export default function ConsolePage() {
                 Z
               </span>
               <span className="mono text-[11px] text-[var(--fg-faint)]">
-                ONA est {activeCase.off_nadir_estimate_deg.toFixed(1)}°
+                ONA min{" "}
+                {typeof closestOna === "number"
+                  ? `${closestOna.toFixed(2)}°`
+                  : "—"}
               </span>
               <span className="mono text-[11px] text-[var(--fg-faint)]">
-                weight ×{activeCase.weight.toFixed(2)}
+                w {activeCase.weight.toFixed(2)}
               </span>
               <span
                 className="mono text-[11px]"
@@ -131,9 +145,7 @@ export default function ConsolePage() {
                   className="numeric tabular-nums leading-none text-[var(--phos)]"
                   style={{ fontSize: 28, letterSpacing: "-0.04em" }}
                 >
-                  {mission.S_total !== null
-                    ? mission.S_total.toFixed(3)
-                    : "———"}
+                  {mission.S_total.toFixed(3)}
                 </span>
                 <span className="mono text-[10px] tabular-nums text-[var(--fg-faint)]">
                   {mission.done}/{mission.total}

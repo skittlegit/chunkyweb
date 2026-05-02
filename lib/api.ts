@@ -53,22 +53,37 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 // Backend returns case objects without weight/difficulty/off_nadir_estimate_deg.
-// Provide UI-friendly defaults keyed by case id so the sidebar can render safely.
-const CASE_UI_DEFAULTS: Record<
-  string,
-  Pick<CaseConfig, "weight" | "difficulty" | "off_nadir_estimate_deg">
-> = {
-  case1: { weight: 1.0, difficulty: "easy", off_nadir_estimate_deg: 5 },
-  case2: { weight: 0.5, difficulty: "moderate", off_nadir_estimate_deg: 30 },
-  case3: { weight: 0.25, difficulty: "hard", off_nadir_estimate_deg: 55 },
+// The official contest weights (per chunkyapi/HANDOFF.md) are 0.25 / 0.35 / 0.40
+// for case1/case2/case3 respectively. Off-nadir estimate is parsed from the
+// case name ("~30°", "~55-60°", etc.) until the backend exposes it directly.
+const CASE_WEIGHTS: Record<string, number> = {
+  case1: 0.25,
+  case2: 0.35,
+  case3: 0.40,
 };
 
+function parseOffNadirHint(name: string | undefined): number {
+  if (!name) return 0;
+  // Match the first "NN°" or "NN-MM°" pattern.
+  const range = name.match(/(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)\s*°/);
+  if (range) {
+    return (parseFloat(range[1]) + parseFloat(range[2])) / 2;
+  }
+  const single = name.match(/(\d+(?:\.\d+)?)\s*°/);
+  if (single) return parseFloat(single[1]);
+  // Fallback heuristic for the canonical case names.
+  if (/nadir/i.test(name)) return 0;
+  return 0;
+}
+
+function difficultyFromOffNadir(deg: number): "easy" | "moderate" | "hard" {
+  if (deg >= 50) return "hard";
+  if (deg >= 20) return "moderate";
+  return "easy";
+}
+
 function adaptCase(raw: Partial<CaseConfig> & { id: string }): CaseConfig {
-  const defaults = CASE_UI_DEFAULTS[raw.id] ?? {
-    weight: 1,
-    difficulty: "moderate" as const,
-    off_nadir_estimate_deg: 0,
-  };
+  const ona = raw.off_nadir_estimate_deg ?? parseOffNadirHint(raw.name);
   return {
     id: raw.id,
     name: raw.name ?? raw.id,
@@ -77,10 +92,9 @@ function adaptCase(raw: Partial<CaseConfig> & { id: string }): CaseConfig {
     aoi_polygon: raw.aoi_polygon ?? [],
     pass_start_utc: raw.pass_start_utc ?? "",
     pass_end_utc: raw.pass_end_utc ?? "",
-    weight: raw.weight ?? defaults.weight,
-    difficulty: raw.difficulty ?? defaults.difficulty,
-    off_nadir_estimate_deg:
-      raw.off_nadir_estimate_deg ?? defaults.off_nadir_estimate_deg,
+    weight: raw.weight ?? CASE_WEIGHTS[raw.id] ?? 0,
+    difficulty: raw.difficulty ?? difficultyFromOffNadir(ona),
+    off_nadir_estimate_deg: ona,
   };
 }
 

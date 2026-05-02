@@ -13,6 +13,7 @@ const NAV = [
   { href: "/", label: "Console" },
   { href: "/compare", label: "Compare" },
   { href: "/export", label: "Export" },
+  { href: "/about", label: "About" },
 ];
 
 export function Navbar() {

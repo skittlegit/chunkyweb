@@ -4,7 +4,9 @@ import type { Strategy, TileStatus } from "./types";
 // Pass / physics constants
 // ============================================================
 
-export const PASS_DURATION_S = 600;
+// Total pass length, seconds. Matches the backend's T_pass = 720 s used by
+// `compute_time_efficiency` in chunkyapi/app/core/scorer.py.
+export const PASS_DURATION_S = 720;
 export const OFF_NADIR_LIMIT_DEG = 60;
 export const BODY_RATE_LIMIT_DPS = 0.05;
 export const WHEEL_LIMIT_MNMS = 30;
