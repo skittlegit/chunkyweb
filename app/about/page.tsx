@@ -35,14 +35,16 @@ export default function AboutPage() {
                 label="chunkyweb"
                 sub="web · next.js · react"
               />
-              <PersonChip
-                href="https://github.com/ankitaww"
-                label="ankitaww"
-              />
-              <PersonChip
-                href="https://github.com/skittlegit"
-                label="skittlegit"
-              />
+              <div className="flex items-center gap-2">
+                <PersonChip
+                  href="https://github.com/ankitaww"
+                  label="ankitaww"
+                />
+                <PersonChip
+                  href="https://github.com/skittlegit"
+                  label="skittlegit"
+                />
+              </div>
             </div>
           </header>
 
