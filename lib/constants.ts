@@ -95,19 +95,14 @@ export const STRATEGIES: StrategyDef[] = [
 // ============================================================
 // Weight schemes
 // ============================================================
-// `hackathon` matches chunkyapi/HANDOFF.md and is the contest default.
-// `web` is the legacy display weighting kept for reference.
+// Single contest weighting per chunkyapi/HANDOFF.md.
 export const WEIGHT_SCHEMES: Record<
-  "hackathon" | "web",
+  "hackathon",
   { label: string; weights: Record<string, number> }
 > = {
   hackathon: {
     label: "Hackathon",
     weights: { case1: 0.25, case2: 0.35, case3: 0.40 },
-  },
-  web: {
-    label: "Web (legacy)",
-    weights: { case1: 1.0, case2: 0.5, case3: 0.25 },
   },
 };
 

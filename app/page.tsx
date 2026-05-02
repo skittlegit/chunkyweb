@@ -22,14 +22,11 @@ import {
   DIFFICULTY_LABEL,
   WEIGHT_SCHEMES,
 } from "@/lib/constants";
-import type { WeightScheme } from "@/store/useAppStore";
 
 export default function ConsolePage() {
   const { data: cases } = useCases();
   const selectedCaseId = useAppStore((s) => s.selectedCaseId);
   const results = useAppStore((s) => s.results);
-  const weightScheme = useAppStore((s) => s.weightScheme);
-  const setWeightScheme = useAppStore((s) => s.setWeightScheme);
   const result = results[selectedCaseId];
   const { error } = useRunPass();
   const [framesOpen, setFramesOpen] = useState(false);
@@ -50,9 +47,8 @@ export default function ConsolePage() {
 
   // Mission total — weighted sum across all cases that have simulated.
   // Per chunkyapi/HANDOFF.md: hackathon weights are 0.25 / 0.35 / 0.40 (sum
-  // to 1.0). The user can also flip to legacy "web" weights (1.0/0.5/0.25),
-  // but those are display-only and don't match the contest grader.
-  const scheme = WEIGHT_SCHEMES[weightScheme];
+  // to 1.0).
+  const scheme = WEIGHT_SCHEMES.hackathon;
   const mission = useMemo(() => {
     if (!cases?.length) return null;
     const rows = cases.map((c) => {
@@ -137,32 +133,6 @@ export default function ConsolePage() {
                     )
                     .join(" + ")}
                 </span>
-                <div className="flex items-center gap-1">
-                  <span className="mono text-[9px] uppercase tracking-[0.18em] text-[var(--fg-faint)]">
-                    weights
-                  </span>
-                  {(Object.keys(WEIGHT_SCHEMES) as WeightScheme[]).map(
-                    (k) => {
-                      const active = weightScheme === k;
-                      return (
-                        <button
-                          key={k}
-                          type="button"
-                          onClick={() => setWeightScheme(k)}
-                          className={
-                            "mono border px-2 py-[2px] text-[9px] uppercase tracking-[0.16em] transition-colors " +
-                            (active
-                              ? "border-[var(--phos)] bg-[var(--phos-soft)] text-[var(--fg)]"
-                              : "border-[var(--line)] text-[var(--fg-mute)] hover:border-[var(--line-bright)] hover:text-[var(--fg)]")
-                          }
-                          style={{ borderRadius: 2 }}
-                        >
-                          {WEIGHT_SCHEMES[k].label}
-                        </button>
-                      );
-                    }
-                  )}
-                </div>
               </div>
               <div
                 className="flex flex-wrap items-stretch gap-0 border border-[var(--line)] bg-[var(--bg-soft)]"

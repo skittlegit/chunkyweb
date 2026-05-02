@@ -1,36 +1,53 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ChunkyWeb
 
-## Getting Started
+Next.js (App Router) console for the "Lost in Space" hackathon. Talks to
+[ChunkyAPI](../chunkyapi) — runs the planner, scores the schedule, renders
+coverage maps, score cards, and a frame table.
 
-First, run the development server:
+## Scoring
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+Per-case score: `S_orbit = C · (1 + 0.25·η_E + 0.10·η_T) · Q_smear`
+
+Mission total uses the contest weights from `chunkyapi/HANDOFF.md`:
+
+```
+S_total = 0.25·S_case1 + 0.35·S_case2 + 0.40·S_case3
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Reference run against the bundled test cases: `S_total ≈ 1.18`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Local development
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```powershell
+# Backend (separate shell)
+cd ..\chunkyapi
+.venv\Scripts\Activate.ps1
+uvicorn app.main:app --reload
 
-## Learn More
+# Frontend
+npm install
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+Open http://localhost:3000. Set `NEXT_PUBLIC_API_URL` if the API isn't on
+`http://localhost:8000`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Layout
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `app/page.tsx` — main console, mission strip, per-case cards
+- `components/` — score card, frame table, coverage map, timeline
+- `hooks/useRunPass.ts` — plan → simulate → store flow
+- `lib/api.ts` — fetch + adapter between the flat backend shape and the
+  rich UI types
+- `lib/constants.ts` — weight scheme, score ceilings, palette
+- `store/useAppStore.ts` — Zustand store (selected case, sliders, results)
 
-## Deploy on Vercel
+## Notes
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Attitude (~35k samples) is sent at full resolution to `/api/simulate`
+  because the endpoint differentiates adjacent samples for body rates;
+  any stride straddles slew transitions and tanks `Q_smear`. After
+  simulate returns, `useRunPass` strips the array before storing the
+  plan in Zustand to keep the cache small.
+- `settle_margin_s` defaults to `0.3` to match the backend planner.
+- Only one weight scheme is exposed (contest weights).

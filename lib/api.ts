@@ -232,22 +232,12 @@ function adaptSchedule(raw: RawSchedule | undefined): Schedule {
     };
   });
 
-  // The planner emits attitude at ~50 Hz (~35k samples for a 720 s pass),
-  // which is ~4 MB of JSON. The UI never reads it directly and the simulate
-  // endpoint only needs ~1 Hz resolution to recover body rates at shutter
-  // midpoints. Downsample at the API boundary so we never hold a fat copy.
-  const fullAttitude = (raw?.attitude as AttitudeSample[] | undefined) ?? [];
-  const MAX_ATT = 1024;
-  let attitude: AttitudeSample[] = fullAttitude;
-  if (fullAttitude.length > MAX_ATT) {
-    const stride = Math.ceil(fullAttitude.length / MAX_ATT);
-    attitude = [];
-    for (let i = 0; i < fullAttitude.length; i += stride) {
-      attitude.push(fullAttitude[i]);
-    }
-    const last = fullAttitude[fullAttitude.length - 1];
-    if (attitude[attitude.length - 1]?.t !== last.t) attitude.push(last);
-  }
+  // Keep attitude at full resolution. The simulate endpoint differentiates
+  // adjacent samples to recover body rates; any downsampling here makes the
+  // numerical derivative span slew transitions and reports fake high rates,
+  // which collapses Q_smear. useRunPass strips the array after simulate runs
+  // so it never sits in the Zustand cache.
+  const attitude = (raw?.attitude as AttitudeSample[] | undefined) ?? [];
 
   return {
     objective: raw?.objective,
@@ -507,8 +497,9 @@ export const api = {
     return adaptPlan(raw);
   },
   simulate: async (params: SimulateRequest): Promise<SimulateResponse> => {
-    // Attitude is already downsampled at the plan-adapt boundary, so the
-    // outbound body is small (~80 KB vs ~4 MB raw).
+    // The schedule carries full-resolution attitude (~35k samples / ~4 MB).
+    // Required: simulate differentiates adjacent samples for body rates,
+    // and any coarser stride straddles slew transitions → fake smear fails.
     const raw = await apiFetch<RawSimulateResponse>("/api/simulate", {
       method: "POST",
       body: JSON.stringify(params),

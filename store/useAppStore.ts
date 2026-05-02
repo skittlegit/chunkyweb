@@ -10,7 +10,7 @@ interface CaseRunResult {
   durationMs?: number;
 }
 
-export type WeightScheme = "hackathon" | "web";
+export type WeightScheme = "hackathon";
 
 interface AppStore {
   selectedCaseId: string;
