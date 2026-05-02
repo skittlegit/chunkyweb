@@ -9,24 +9,98 @@ export default function AboutPage() {
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-[var(--bg)] text-[var(--fg)]">
       <Navbar />
       <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto flex max-w-[920px] flex-col gap-8 px-6 py-10">
-          <header className="flex flex-col gap-2">
+        <div className="mx-auto flex max-w-[920px] flex-col gap-10 px-6 py-12">
+          <header className="flex flex-col gap-3">
             <span className="kbd">About · process</span>
             <h1
-              className="display-tight text-[36px] leading-[0.95] text-[var(--fg)]"
+              className="display-tight text-[42px] leading-[0.95] text-[var(--fg)]"
               style={{ letterSpacing: "-0.04em" }}
             >
-              How a pass is scored, end to end.
+              How we built the orbital scheduler.
             </h1>
-            <p className="max-w-[640px] text-[14px] leading-relaxed text-[var(--fg-mute)]">
-              The Lost-in-Space pipeline turns a 12-minute spacecraft pass into
-              a single number. This page walks through the API logic stage by
-              stage: case &rarr; ephemeris &rarr; tile grid &rarr; schedule
-              &rarr; trajectory &rarr; simulator &rarr; score. Frontend
-              concerns (rendering, animation) are intentionally not covered.
+            <p className="max-w-[680px] text-[14px] leading-relaxed text-[var(--fg-mute)]">
+              Two repos, one pass: a Python + FastAPI service that propagates
+              orbits and scores schedules, and a Next.js console that renders
+              them. Below is the path from a blank editor to a mission total
+              that lands inside 99% of the geometric ceiling.
             </p>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <RepoChip
+                href="https://github.com/skittlegit/chunkyapi"
+                label="chunkyapi"
+                sub="api · python · fastapi"
+              />
+              <RepoChip
+                href="https://github.com/skittlegit/chunkyweb"
+                label="chunkyweb"
+                sub="web · next.js · react"
+              />
+              <PersonChip
+                href="https://github.com/ankitaww"
+                label="ankitaww"
+              />
+              <PersonChip
+                href="https://github.com/skittlegit"
+                label="skittlegit"
+              />
+            </div>
           </header>
 
+          {/* Ideation / process narrative ------------------------------------ */}
+          <Module label="Story" hint="How we ideated and shipped it">
+            <div className="flex flex-col gap-3 text-[13px] leading-relaxed text-[var(--fg-mute)]">
+              <p>
+                The brief was deceptively simple: take a satellite, a 12-minute
+                pass, and a polygon on the ground. Plan an attitude profile
+                that images as much of the polygon as possible without smearing
+                the photos, saturating the reaction wheels, or pointing past a
+                60° off-nadir gate. Score it. Beat the reference.
+              </p>
+              <p>
+                We split the problem in half on day one. One side took the
+                physics — SGP4 propagation, frame conversions, attitude
+                quaternions, the scoring contract. The other side took the
+                interface — a dashboard you could trust to show what the
+                planner was actually doing, frame by frame, instead of a
+                single opaque number.
+              </p>
+              <p>
+                The first plans hit ~0.08 / 1.35 per case. Slews were too
+                aggressive, the wheel momentum integral blew through its 0.200
+                Nms budget, and half the shutters fired with the spacecraft
+                still settling. Three things fixed it: a serpentine tile order
+                so neighbouring shots stayed close, a global argmin scheduler
+                that picks the cheapest (time, tile) pair under the gate
+                instead of greedy left-to-right, and identical-quaternion
+                hold brackets around each 120 ms exposure to satisfy the
+                smear gate without slowing the rest of the trajectory.
+              </p>
+              <p>
+                On the web side the priority was honesty. Every value the UI
+                shows comes from the backend payload — the closest-approach
+                off-nadir is recomputed from SGP4 each load, the per-case
+                score is the raw S_orbit returned by /api/simulate, the
+                frames-kept badge mirrors the planner&rsquo;s own diagnostics.
+                When we discovered the front-end had been hard-coding the
+                wrong contest weights (1.0 / 0.5 / 0.25 instead of 0.25 /
+                0.35 / 0.40), we added a toggle so both numbers stay
+                visible — but the hackathon weights are the default because
+                that&rsquo;s what the grader uses.
+              </p>
+              <p>
+                Case 3 took a day of dead ends. Cross-track distance is
+                roughly 1000 km; the maximum reachable arc from 506 km
+                altitude under a 60° gate is about 1022 km, and the AOI&rsquo;s
+                nearest corner sits a few kilometres past that horizon. After
+                four independent verifications — geometric, harness sweep,
+                wide footprint sweep, and the organiser&rsquo;s own reference
+                solution — we accepted the 0 and stopped trying to exploit it.
+                The ceiling is 0.660. The current solver hits 0.6543.
+              </p>
+            </div>
+          </Module>
+
+          {/* Pipeline stages -------------------------------------------------- */}
           <Stage
             n="01"
             title="Case definition"
@@ -34,10 +108,9 @@ export default function AboutPage() {
             body={[
               "Each case is a fixed JSON record describing a 12-minute pass: a TLE pair (orbit), an AOI polygon (1° × 1.26° box centred near 45 N / 10 E for the bundled cases), pass start/end UTC, and spacecraft parameters (FOV 2.0°, body inertia [0.12, 0.12, 0.08]).",
               "The three bundled cases differ only in the second TLE — case1 puts the satellite directly over the AOI, case2 ~330 km cross-track, case3 places it past the geometric horizon for a 60° off-nadir gate.",
-              "Contest weights are 0.25, 0.35, 0.40 for case1/2/3. They are absolute (sum to 1.0) and applied to the per-case score at the very end.",
+              "Contest weights are 0.25 / 0.35 / 0.40 for case1 / case2 / case3. They are absolute (sum to 1.0) and applied to the per-case score at the very end.",
             ]}
           />
-
           <Stage
             n="02"
             title="Ephemeris"
@@ -47,29 +120,26 @@ export default function AboutPage() {
               "The closest-approach instant is min(off_nadir_to_aoi_center_deg) over the pass — the natural anchor for any nadir-style strategy.",
             ]}
           />
-
           <Stage
             n="03"
             title="Tiling"
             sub="POST /api/plan · core/tiling.py"
             body={[
-              "The AOI bounding box is gridded at roughly the FOV footprint size. For the bundled cases this yields a ~10 × 10 grid of square sub-targets (49 tiles in the current backend build), labelled t_RR_CC by row/column.",
+              "The AOI bounding box is gridded at roughly the FOV footprint size. For the bundled cases this yields a ~10 × 10 grid of square sub-targets, labelled t_RR_CC by row/column.",
               "Each tile is a {id, lat_deg, lon_deg, size_deg} record. The size depends on satellite altitude and FOV — backend ships ~0.20° square tiles at 506 km / 2° FOV.",
             ]}
           />
-
           <Stage
             n="04"
             title="Schedule"
             sub="POST /api/plan · core/planner.py"
             body={[
-              "The planner walks the 1 Hz time grid and, for every (time, tile) pair, computes the off-nadir angle if the satellite were to point at that tile. Pairs that violate the 60° hard gate are dropped.",
-              "Greedy / argmin / boustrophedon strategies pick shutter assignments that minimise off-nadir while respecting a slew block (≈ ±0.8 s around each chosen shutter so attitude has time to settle).",
-              "Output: a Schedule of attitude samples (q_BN quaternions, scalar-last) at high rate plus a list of shutters {t_start, t_end, tile_id, tile_lat_deg, tile_lon_deg, off_nadir_deg, q_BN, footprint}.",
+              "The planner walks the 1 Hz time grid and, for every (time, tile) pair, computes the off-nadir angle if the satellite were to point at that tile. Pairs that violate the adaptive gate (default 60°, relaxed for hard cases) are dropped.",
+              "Boustrophedon / global-argmin / center-first strategies pick shutter assignments that minimise off-nadir while respecting a slew block (≈ ±0.8 s around each chosen shutter so attitude has time to settle).",
+              "Output: a Schedule of attitude samples (q_BN quaternions, scalar-last) at high rate plus a list of shutters {t_start, t_end, tile_id, tile_lat_deg, tile_lon_deg, off_nadir_deg, q_BN, footprint}, plus diagnostics including the adaptive `off_nadir_limit_deg` actually used and the list of `skipped_tile_ids`.",
               "The frontend downsamples the attitude array to 1024 samples at the API boundary — the simulator only reads it at shutter midpoints, so high-rate samples are wasted bytes.",
             ]}
           />
-
           <Stage
             n="05"
             title="Simulation"
@@ -80,7 +150,6 @@ export default function AboutPage() {
               "Coverage is computed by sampling an 80 × 80 equirectangular grid inside the AOI and counting points covered by at least one shutter footprint (Sutherland-Hodgman polygon clip).",
             ]}
           />
-
           <Stage
             n="06"
             title="Score"
@@ -90,32 +159,31 @@ export default function AboutPage() {
               "C — coverage fraction (0–1) from the grid sampler.",
               "η_E = max(0, 1 − Δh / 0.200 Nms). 0.200 Nms is the per-pass momentum budget.",
               "η_T = max(0, 1 − T_active / 720 s). T_active = slew + shutter time across the full pass.",
-              "Q_smear = fraction of shutters with body rate ≤ 0.05°/s at midpoint. Anything above the limit smears the image and is rejected.",
-              "Mission total: S_total = 0.25·S₁ + 0.35·S₂ + 0.40·S₃. The frontend mirrors this exact formula in the Mission strip on the Console page; cases that haven't simulated yet contribute zero.",
+              "Q_smear = fraction of shutters with body rate ≤ 0.05°/s at midpoint.",
+              "Mission total: S_total = 0.25·score₁ + 0.35·score₂ + 0.40·score₃. The Console mirrors this exact formula; cases that haven't simulated yet contribute zero.",
             ]}
           />
-
           <Stage
             n="07"
             title="Validation"
             sub="POST /api/validate · routes/validation.py"
             body={[
               "Independent of the scorer, the validator re-checks the three hard gates per shutter: wheel saturation (|H_i| ≤ 0.030 Nms continuously), smear (|ω_body| ≤ 0.05°/s continuously), off-nadir (≤ 60° at the boresight ground hit).",
-              "A shutter that fails any gate yields zero coverage credit even if its footprint covers AOI tiles. The simulator already accounts for this through Q_smear; the validator exists so submissions can audit themselves before grading.",
+              "A shutter that fails any gate yields zero coverage credit. The simulator already accounts for this through Q_smear; the validator exists so submissions can audit themselves before grading.",
             ]}
           />
 
           <Module label="Notes" hint="Caveats and known infeasibilities">
             <ul className="flex flex-col gap-3 text-[13px] leading-relaxed text-[var(--fg-mute)]">
               <li>
-                <span className="text-[var(--fg)]">Case 3 is provably infeasible.</span>{" "}
-                Cross-track distance is ~1000 km; the maximum reachable arc
-                from 506 km altitude under a 60° gate is ~1022 km, and the
-                AOI's nearest corner sits ~10 km past the geometric horizon.
-                All four reference submissions (identity, nadir-greedy,
-                stop-and-stare, organiser solution) score case3 = 0. The
-                ceiling for S_total is ≈ 0.660; the chunkyapi reference solver
-                hits 0.6543 (99.1% of ceiling).
+                <span className="text-[var(--fg)]">
+                  Case 3 is provably infeasible.
+                </span>{" "}
+                Cross-track ≈ 1000 km; max reachable arc from 506 km under a
+                60° gate ≈ 1022 km. All four reference submissions
+                (identity, nadir-greedy, stop-and-stare, organiser solution)
+                score case3 = 0. Ceiling for S_total ≈ 0.660; current solver
+                lands at 0.6543 (99.1% of ceiling).
               </li>
               <li>
                 <span className="text-[var(--fg)]">Mock simulator only.</span>{" "}
@@ -125,19 +193,29 @@ export default function AboutPage() {
                 integrated Δh penalises them through η_E.
               </li>
               <li>
-                <span className="text-[var(--fg)]">Quaternion convention.</span>{" "}
-                Scalar-last `[qx, qy, qz, qw]`, body-to-inertial. Boresight is
-                +z_body; pointing builder uses `y_body = z × v / |z × v|` for
-                yaw resolution.
+                <span className="text-[var(--fg)]">
+                  Quaternion convention.
+                </span>{" "}
+                Scalar-last `[qx, qy, qz, qw]`, body-to-inertial. Boresight
+                is +z_body; pointing builder uses `y_body = z × v / |z × v|`
+                for yaw resolution.
               </li>
             </ul>
           </Module>
 
-          <p className="mt-4 border-t border-[var(--line)] pt-6 text-[11px] text-[var(--fg-faint)]">
-            Source of truth for this page: chunkyapi/HANDOFF.md and
-            chunkyapi/app/core/{`{`}propagator,tiling,planner,scorer{`}`}.py at
-            commit 0568db4. If the backend changes, update this page —
-            nothing here is computed dynamically.
+          <p className="mt-2 border-t border-[var(--line)] pt-6 text-[11px] text-[var(--fg-faint)]">
+            Source of truth for this page:{" "}
+            <a
+              className="underline hover:text-[var(--fg)]"
+              href="https://github.com/skittlegit/chunkyapi/blob/main/HANDOFF.md"
+              target="_blank"
+              rel="noreferrer"
+            >
+              chunkyapi/HANDOFF.md
+            </a>{" "}
+            and chunkyapi/app/core/{`{`}propagator,tiling,planner,scorer{`}`}
+            .py. If the backend changes, update this page — nothing here is
+            computed dynamically.
           </p>
         </div>
       </main>
@@ -184,5 +262,44 @@ function Stage({
         </div>
       </div>
     </section>
+  );
+}
+
+function RepoChip({
+  href,
+  label,
+  sub,
+}: {
+  href: string;
+  label: string;
+  sub: string;
+}) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className="group flex items-baseline gap-2 border border-[var(--line-bright)] px-3 py-1.5 transition-colors hover:border-[var(--phos)] hover:bg-[var(--phos-soft)]"
+      style={{ borderRadius: 2 }}
+    >
+      <span className="display text-[13px] text-[var(--fg)]">{label}</span>
+      <span className="mono text-[9px] uppercase tracking-[0.16em] text-[var(--fg-faint)] group-hover:text-[var(--fg-mute)]">
+        {sub}
+      </span>
+    </a>
+  );
+}
+
+function PersonChip({ href, label }: { href: string; label: string }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className="mono border border-[var(--line)] px-3 py-1.5 text-[10px] uppercase tracking-[0.18em] text-[var(--fg-mute)] transition-colors hover:border-[var(--phos)] hover:text-[var(--fg)]"
+      style={{ borderRadius: 2 }}
+    >
+      @{label}
+    </a>
   );
 }

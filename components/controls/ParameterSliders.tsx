@@ -80,12 +80,13 @@ export function ParameterSliders() {
       <SliderRow
         label="Settle margin"
         value={settle}
-        min={0}
-        max={10}
-        step={0.1}
+        min={0.1}
+        max={1.5}
+        step={0.05}
         unit="s"
-        hint="buffer after slew"
+        hint="buffer after slew · backend default 0.3"
         onChange={setSettle}
+        decimals={2}
       />
       <SliderRow
         label="Off-nadir margin"

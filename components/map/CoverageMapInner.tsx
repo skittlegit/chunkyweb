@@ -240,8 +240,20 @@ function TileMarker({
   selected: boolean;
   onClick: () => void;
 }) {
-  const color = TILE_STATUS_COLOR[tile.status];
+  // Imaged tiles use a sequential ramp keyed on off-nadir (lower = brighter
+  // green-white, higher = duller). Skipped/unreachable tiles render in a
+  // distinct red so it's obvious which ones the planner gave up on.
   const isImaged = tile.status === "imaged";
+  const isSkipped =
+    tile.status === "skipped_saturation" ||
+    tile.status === "skipped_time" ||
+    tile.status === "unreachable";
+
+  const color = isImaged
+    ? onaToColor(tile.off_nadir_deg)
+    : isSkipped
+    ? "#d04a4a"
+    : TILE_STATUS_COLOR[tile.status];
 
   if (tile.footprint && tile.footprint.length >= 3) {
     return (
@@ -252,7 +264,15 @@ function TileMarker({
           color,
           weight: selected ? 2 : 1,
           fillColor: color,
-          fillOpacity: isImaged ? (selected ? 0.5 : 0.3) : 0,
+          fillOpacity: isImaged
+            ? selected
+              ? 0.55
+              : 0.35
+            : isSkipped
+            ? selected
+              ? 0.3
+              : 0.18
+            : 0,
           dashArray: isImaged ? undefined : "3 3",
         }}
       >
@@ -275,7 +295,7 @@ function TileMarker({
         color,
         weight: 1.5,
         fillColor: color,
-        fillOpacity: 0.35,
+        fillOpacity: 0.45,
       }}
     >
       <Tooltip>
@@ -285,4 +305,13 @@ function TileMarker({
       </Tooltip>
     </CircleMarker>
   );
+}
+
+// 0° → bright phosphor white, 60° → muted gray. Linear ramp on lightness.
+function onaToColor(ona: number): string {
+  const clamped = Math.max(0, Math.min(60, ona));
+  const t = clamped / 60; // 0..1
+  // Lightness 95% (clean white) → 55% (mid-gray)
+  const l = Math.round(95 - t * 40);
+  return `hsl(120 8% ${l}%)`;
 }

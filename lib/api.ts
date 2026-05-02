@@ -284,6 +284,29 @@ function adaptPlan(raw: RawPlanResponse): PlanResponse {
     max_wheel_momentum_fraction: Number(d.max_wheel_momentum_fraction ?? 0),
     imaging_window_s: window,
     closest_approach_s: Number(d.closest_approach_s ?? 0),
+    skipped_tile_ids: Array.isArray(d.skipped_tile_ids)
+      ? (d.skipped_tile_ids as string[])
+      : [],
+    off_nadir_limit_deg:
+      typeof d.off_nadir_limit_deg === "number"
+        ? (d.off_nadir_limit_deg as number)
+        : undefined,
+    estimated_delta_h_used_nms:
+      typeof d.estimated_delta_h_used_nms === "number"
+        ? (d.estimated_delta_h_used_nms as number)
+        : undefined,
+    closest_approach_off_nadir_deg:
+      typeof d.closest_approach_off_nadir_deg === "number"
+        ? (d.closest_approach_off_nadir_deg as number)
+        : undefined,
+    tile_size_km:
+      typeof d.tile_size_km === "number" ? (d.tile_size_km as number) : undefined,
+    n_tiles_skipped:
+      typeof d.n_tiles_skipped === "number"
+        ? (d.n_tiles_skipped as number)
+        : Array.isArray(d.skipped_tile_ids)
+        ? (d.skipped_tile_ids as string[]).length
+        : undefined,
   };
 
   return {
@@ -296,7 +319,7 @@ function adaptPlan(raw: RawPlanResponse): PlanResponse {
         sub_sat_lat_at_ca: 0,
         sub_sat_lon_at_ca: 0,
       },
-    tiles: adaptTiles(raw.tiles, schedule.shutters),
+    tiles: adaptTiles(raw.tiles, schedule.shutters, diagnostics.skipped_tile_ids ?? []),
     wheel_momentum_timeline: raw.wheel_momentum_timeline ?? [],
   };
 }
@@ -307,9 +330,11 @@ function adaptPlan(raw: RawPlanResponse): PlanResponse {
 // references it by `tile_id`.
 function adaptTiles(
   raw: RawTile[] | undefined,
-  shutters: Schedule["shutters"]
+  shutters: Schedule["shutters"],
+  skippedIds: string[] = []
 ): TileInfo[] {
   if (!raw || !raw.length) return [];
+  const skippedSet = new Set(skippedIds);
   const imagedById = new Map<
     string,
     { off_nadir_deg: number; footprint?: [number, number][]; index: number }
@@ -340,11 +365,19 @@ function adaptTiles(
           ]
         : null;
     const hit = imagedById.get(t.id);
+    const explicit = t.status;
+    const status: TileInfo["status"] = explicit
+      ? explicit
+      : hit
+      ? "imaged"
+      : skippedSet.has(t.id)
+      ? "unreachable"
+      : "pending";
     return {
       id: t.id,
       center_lat,
       center_lon,
-      status: t.status ?? (hit ? "imaged" : "pending"),
+      status,
       shutter_index: t.shutter_index ?? hit?.index,
       off_nadir_deg: Number(t.off_nadir_deg ?? hit?.off_nadir_deg ?? 0),
       footprint:

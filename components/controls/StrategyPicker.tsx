@@ -12,6 +12,7 @@ export function StrategyPicker() {
     <div className="grid grid-cols-1 gap-2">
       {STRATEGIES.map((s, i) => {
         const active = strategy === s.id;
+        const experimental = s.id !== "boustrophedon";
         return (
           <button
             key={s.id}
@@ -52,14 +53,24 @@ export function StrategyPicker() {
                 >
                   {s.label}
                 </span>
-                <span
-                  className="kbd tabular-nums"
-                  style={{
-                    color: active ? "var(--phos)" : "var(--fg-faint)",
-                  }}
-                >
-                  {String(i + 1).padStart(2, "0")}
-                </span>
+                <div className="flex items-baseline gap-2">
+                  {experimental && (
+                    <span
+                      className="mono text-[8px] uppercase tracking-[0.18em]"
+                      style={{ color: "#d04a4a" }}
+                    >
+                      experimental
+                    </span>
+                  )}
+                  <span
+                    className="kbd tabular-nums"
+                    style={{
+                      color: active ? "var(--phos)" : "var(--fg-faint)",
+                    }}
+                  >
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                </div>
               </div>
               <span className="text-[12px] leading-snug text-[var(--fg-mute)]">
                 {s.hint}

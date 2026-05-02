@@ -92,6 +92,13 @@ export interface PlanDiagnostics {
   max_wheel_momentum_fraction: number;
   imaging_window_s: [number, number];
   closest_approach_s: number;
+  // New diagnostic fields surfaced by the upgraded backend planner.
+  skipped_tile_ids?: string[];
+  off_nadir_limit_deg?: number;
+  estimated_delta_h_used_nms?: number;
+  closest_approach_off_nadir_deg?: number;
+  tile_size_km?: number;
+  n_tiles_skipped?: number;
 }
 
 export interface PlanResponse {

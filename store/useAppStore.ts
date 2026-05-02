@@ -10,6 +10,8 @@ interface CaseRunResult {
   durationMs?: number;
 }
 
+export type WeightScheme = "hackathon" | "web";
+
 interface AppStore {
   selectedCaseId: string;
   selectedTileId: string | null;
@@ -17,6 +19,7 @@ interface AppStore {
   strategy: Strategy;
   settleMargin: number;
   offNadirMargin: number;
+  weightScheme: WeightScheme;
   results: Record<string, CaseRunResult>;
 
   selectCase: (id: string) => void;
@@ -25,6 +28,7 @@ interface AppStore {
   setStrategy: (s: Strategy) => void;
   setSettleMargin: (n: number) => void;
   setOffNadirMargin: (n: number) => void;
+  setWeightScheme: (w: WeightScheme) => void;
   setCaseResult: (id: string, result: CaseRunResult) => void;
 }
 
@@ -34,8 +38,11 @@ export const useAppStore = create<AppStore>((set) => ({
   selectedTileId: null,
   selectedFrameIndex: null,
   strategy: "boustrophedon",
-  settleMargin: 3.0,
+  // Backend defaults to 0.3 s; values >~1.0 push tiles outside their access
+  // window and collapse coverage. Slider is clamped 0.1..1.5 to match.
+  settleMargin: 0.3,
   offNadirMargin: 5.0,
+  weightScheme: "hackathon",
   results: {},
 
   selectCase: (id) =>
@@ -45,6 +52,7 @@ export const useAppStore = create<AppStore>((set) => ({
   setStrategy: (s) => set({ strategy: s }),
   setSettleMargin: (n) => set({ settleMargin: n }),
   setOffNadirMargin: (n) => set({ offNadirMargin: n }),
+  setWeightScheme: (w) => set({ weightScheme: w }),
   setCaseResult: (id, result) =>
     set((s) => ({
       results: {

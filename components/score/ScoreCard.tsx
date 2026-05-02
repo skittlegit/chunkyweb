@@ -1,6 +1,7 @@
 "use client";
 
 import type { ScoreBreakdown } from "@/lib/types";
+import { S_ORBIT_MAX } from "@/lib/constants";
 
 interface ScoreCardProps {
   score: ScoreBreakdown;
@@ -15,12 +16,15 @@ const COMPONENTS: { key: keyof ScoreBreakdown; full: string; sym: string }[] = [
 
 export function ScoreCard({ score }: ScoreCardProps) {
   const v = Number.isFinite(score.S_orbit) ? score.S_orbit : 0;
+  // Bar fills the full track at the theoretical ceiling
+  // S_orbit_max = 1.35 = (1 + 0.25 + 0.10). The numeric value is shown raw.
+  const fill = Math.max(0, Math.min(1, v / S_ORBIT_MAX));
 
   return (
     <div className="flex h-full flex-col gap-6">
       {/* Hero */}
       <div className="flex flex-col gap-2">
-        <span className="kbd">S_orbit · weighted result</span>
+        <span className="kbd">S_orbit · per-case score</span>
         <div className="flex items-end gap-3">
           <span
             className="numeric leading-[0.85] text-[var(--phos)]"
@@ -30,7 +34,7 @@ export function ScoreCard({ score }: ScoreCardProps) {
           </span>
           <div className="mb-1 flex flex-col text-[var(--fg-faint)]">
             <span className="mono text-[10px] uppercase tracking-[0.18em]">
-              of 1.000
+              of {S_ORBIT_MAX.toFixed(2)}
             </span>
             <span className="mono text-[10px] uppercase tracking-[0.18em]">
               {percentBand(v)}
@@ -43,9 +47,16 @@ export function ScoreCard({ score }: ScoreCardProps) {
             aria-hidden
             className="absolute inset-y-0 left-0 bg-[var(--phos)]"
             style={{
-              width: `${Math.max(0, Math.min(1, v)) * 100}%`,
+              width: `${fill * 100}%`,
               transition: "width 0.6s cubic-bezier(.2,.7,.2,1)",
             }}
+          />
+          {/* Marker at C=1.0 — the no-bonus baseline. */}
+          <span
+            aria-hidden
+            className="absolute inset-y-[-3px] w-px bg-[var(--fg-faint)]"
+            style={{ left: `${(1 / S_ORBIT_MAX) * 100}%` }}
+            title="C = 1.0 (full coverage, no bonus)"
           />
         </div>
         {score.breakdown && (
@@ -99,9 +110,10 @@ export function ScoreCard({ score }: ScoreCardProps) {
 }
 
 function percentBand(v: number) {
-  if (v >= 0.85) return "BAND · A";
-  if (v >= 0.7) return "BAND · B";
-  if (v >= 0.5) return "BAND · C";
-  if (v >= 0.3) return "BAND · D";
+  // Bands relative to S_orbit_max = 1.35.
+  if (v >= 1.20) return "BAND · A";
+  if (v >= 1.05) return "BAND · B";
+  if (v >= 0.85) return "BAND · C";
+  if (v >= 0.50) return "BAND · D";
   return "BAND · F";
 }

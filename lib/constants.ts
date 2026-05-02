@@ -78,16 +78,39 @@ export const STRATEGIES: StrategyDef[] = [
   {
     id: "boustrophedon",
     label: "Boustrophedon",
-    hint: "Serpentine sweep — minimises slew time across rows.",
+    hint: "Serpentine sweep — minimises slew time across rows. Recommended.",
   },
   {
     id: "greedy",
     label: "Greedy",
-    hint: "Always picks the next-best tile by score margin.",
+    hint: "Picks next-best tile by score margin. Experimental — lower coverage.",
   },
   {
     id: "center_first",
     label: "Center-First",
-    hint: "Locks the centroid first, then expands outward.",
+    hint: "Locks the centroid then expands. Experimental — lower coverage.",
   },
 ];
+
+// ============================================================
+// Weight schemes
+// ============================================================
+// `hackathon` matches chunkyapi/HANDOFF.md and is the contest default.
+// `web` is the legacy display weighting kept for reference.
+export const WEIGHT_SCHEMES: Record<
+  "hackathon" | "web",
+  { label: string; weights: Record<string, number> }
+> = {
+  hackathon: {
+    label: "Hackathon",
+    weights: { case1: 0.25, case2: 0.35, case3: 0.40 },
+  },
+  web: {
+    label: "Web (legacy)",
+    weights: { case1: 1.0, case2: 0.5, case3: 0.25 },
+  },
+};
+
+// Per-case score upper bound for visual scaling.
+// S_orbit ≤ C·(1 + 0.25·η_E + 0.10·η_T)·Q_smear ≤ 1·1.35·1 = 1.35.
+export const S_ORBIT_MAX = 1.35;

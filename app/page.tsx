@@ -17,12 +17,19 @@ import { StrategyPicker } from "@/components/controls/StrategyPicker";
 import { ParameterSliders } from "@/components/controls/ParameterSliders";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { ErrorState } from "@/components/shared/ErrorState";
-import { DIFFICULTY_COLOR, DIFFICULTY_LABEL } from "@/lib/constants";
+import {
+  DIFFICULTY_COLOR,
+  DIFFICULTY_LABEL,
+  WEIGHT_SCHEMES,
+} from "@/lib/constants";
+import type { WeightScheme } from "@/store/useAppStore";
 
 export default function ConsolePage() {
   const { data: cases } = useCases();
   const selectedCaseId = useAppStore((s) => s.selectedCaseId);
   const results = useAppStore((s) => s.results);
+  const weightScheme = useAppStore((s) => s.weightScheme);
+  const setWeightScheme = useAppStore((s) => s.setWeightScheme);
   const result = results[selectedCaseId];
   const { error } = useRunPass();
   const [framesOpen, setFramesOpen] = useState(false);
@@ -38,19 +45,23 @@ export default function ConsolePage() {
   // estimate (which was wrong for all three cases).
   const { data: ephemeris } = useEphemeris(selectedCaseId);
   const closestOna = ephemeris?.closest_approach?.min_off_nadir_deg;
+  const onaLimit = result?.plan?.diagnostics?.off_nadir_limit_deg;
+  const planDiag = result?.plan?.diagnostics;
 
   // Mission total — weighted sum across all cases that have simulated.
-  // Per chunkyapi/HANDOFF.md: `S_total = 0.25·S₁ + 0.35·S₂ + 0.40·S₃`. The
-  // weights are absolute (they already sum to 1.0), not normalised. Cases
-  // that haven't simulated yet contribute 0 — match what the grader does.
+  // Per chunkyapi/HANDOFF.md: hackathon weights are 0.25 / 0.35 / 0.40 (sum
+  // to 1.0). The user can also flip to legacy "web" weights (1.0/0.5/0.25),
+  // but those are display-only and don't match the contest grader.
+  const scheme = WEIGHT_SCHEMES[weightScheme];
   const mission = useMemo(() => {
     if (!cases?.length) return null;
     const rows = cases.map((c) => {
       const r = results[c.id]?.simulate?.score?.S_orbit;
+      const w = scheme.weights[c.id] ?? c.weight ?? 0;
       return {
         id: c.id,
         name: c.name,
-        weight: c.weight,
+        weight: w,
         S: typeof r === "number" && Number.isFinite(r) ? r : null,
       };
     });
@@ -60,7 +71,7 @@ export default function ConsolePage() {
       0
     );
     return { rows, done, total: rows.length, S_total };
-  }, [cases, results]);
+  }, [cases, results, scheme]);
 
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-[var(--bg)] text-[var(--fg)]">
@@ -88,8 +99,18 @@ export default function ConsolePage() {
                   : "—"}
               </span>
               <span className="mono text-[11px] text-[var(--fg-faint)]">
-                w {activeCase.weight.toFixed(2)}
+                w {(scheme.weights[activeCase.id] ?? activeCase.weight).toFixed(2)}
               </span>
+              {typeof onaLimit === "number" && (
+                <span className="mono text-[11px] text-[var(--fg-faint)]">
+                  gate ≤ {onaLimit.toFixed(1)}°
+                </span>
+              )}
+              {planDiag && typeof planDiag.n_tiles_total === "number" && (
+                <span className="mono text-[11px] text-[var(--fg-faint)]">
+                  {planDiag.n_tiles_imaged}/{planDiag.n_tiles_total} kept
+                </span>
+              )}
               <span
                 className="mono text-[11px]"
                 style={{ color: DIFFICULTY_COLOR[activeCase.difficulty] }}
@@ -105,51 +126,109 @@ export default function ConsolePage() {
 
           {/* Mission strip — per-case scores + cumulative S_total. */}
           {mission && mission.rows.length > 0 && (
-            <section
-              className="flex flex-wrap items-stretch gap-0 border border-[var(--line)] bg-[var(--bg-soft)]"
-              style={{ borderRadius: 6 }}
-            >
-              {mission.rows.map((r, i) => {
-                const active = r.id === selectedCaseId;
-                return (
-                  <div
-                    key={r.id}
-                    className={
-                      "flex flex-1 items-baseline gap-3 px-5 py-3 " +
-                      (i > 0 ? "border-l border-[var(--line)] " : "") +
-                      (active ? "bg-[var(--bg-lift)]" : "")
+            <section className="flex flex-col gap-2">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+                <span className="mono text-[10px] uppercase tracking-[0.22em] text-[var(--fg-faint)]">
+                  S_total ={" "}
+                  {mission.rows
+                    .map(
+                      (r, i) =>
+                        `${r.weight.toFixed(2)}·score_${i + 1}`
+                    )
+                    .join(" + ")}
+                </span>
+                <div className="flex items-center gap-1">
+                  <span className="mono text-[9px] uppercase tracking-[0.18em] text-[var(--fg-faint)]">
+                    weights
+                  </span>
+                  {(Object.keys(WEIGHT_SCHEMES) as WeightScheme[]).map(
+                    (k) => {
+                      const active = weightScheme === k;
+                      return (
+                        <button
+                          key={k}
+                          type="button"
+                          onClick={() => setWeightScheme(k)}
+                          className={
+                            "mono border px-2 py-[2px] text-[9px] uppercase tracking-[0.16em] transition-colors " +
+                            (active
+                              ? "border-[var(--phos)] bg-[var(--phos-soft)] text-[var(--fg)]"
+                              : "border-[var(--line)] text-[var(--fg-mute)] hover:border-[var(--line-bright)] hover:text-[var(--fg)]")
+                          }
+                          style={{ borderRadius: 2 }}
+                        >
+                          {WEIGHT_SCHEMES[k].label}
+                        </button>
+                      );
                     }
-                  >
-                    <span className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--fg-faint)]">
-                      C·{String(i + 1).padStart(2, "0")}
-                    </span>
-                    <span
-                      className="numeric tabular-nums leading-none text-[var(--fg)]"
-                      style={{ fontSize: 22, letterSpacing: "-0.035em" }}
-                    >
-                      {r.S !== null ? r.S.toFixed(3) : "———"}
-                    </span>
-                    <span className="mono text-[10px] tabular-nums text-[var(--fg-mute)]">
-                      ×{r.weight.toFixed(2)}
-                    </span>
-                  </div>
-                );
-              })}
+                  )}
+                </div>
+              </div>
               <div
-                className="flex items-baseline gap-3 border-l border-[var(--line-bright)] bg-[var(--bg-lift)] px-6 py-3"
+                className="flex flex-wrap items-stretch gap-0 border border-[var(--line)] bg-[var(--bg-soft)]"
+                style={{ borderRadius: 6 }}
               >
-                <span className="mono text-[10px] uppercase tracking-[0.22em] text-[var(--fg-mute)]">
-                  S_total
-                </span>
-                <span
-                  className="numeric tabular-nums leading-none text-[var(--phos)]"
-                  style={{ fontSize: 28, letterSpacing: "-0.04em" }}
-                >
-                  {mission.S_total.toFixed(3)}
-                </span>
-                <span className="mono text-[10px] tabular-nums text-[var(--fg-faint)]">
-                  {mission.done}/{mission.total}
-                </span>
+                {mission.rows.map((r, i) => {
+                  const active = r.id === selectedCaseId;
+                  const diag =
+                    results[r.id]?.plan?.diagnostics;
+                  return (
+                    <div
+                      key={r.id}
+                      className={
+                        "flex flex-1 flex-col gap-1 px-5 py-3 " +
+                        (i > 0 ? "border-l border-[var(--line)] " : "") +
+                        (active ? "bg-[var(--bg-lift)]" : "")
+                      }
+                    >
+                      <div className="flex items-baseline gap-3">
+                        <span className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--fg-faint)]">
+                          C·{String(i + 1).padStart(2, "0")}
+                        </span>
+                        <span
+                          className="numeric tabular-nums leading-none text-[var(--fg)]"
+                          style={{ fontSize: 22, letterSpacing: "-0.035em" }}
+                        >
+                          {r.S !== null ? r.S.toFixed(3) : "———"}
+                        </span>
+                        <span className="mono text-[10px] tabular-nums text-[var(--fg-mute)]">
+                          ×{r.weight.toFixed(2)}
+                        </span>
+                      </div>
+                      {diag && typeof diag.n_tiles_total === "number" && (
+                        <div className="flex flex-wrap items-baseline gap-2 text-[10px] text-[var(--fg-faint)]">
+                          <span className="mono tabular-nums">
+                            {diag.n_tiles_imaged}/{diag.n_tiles_total} frames
+                          </span>
+                          {typeof diag.off_nadir_limit_deg === "number" && (
+                            <span className="mono tabular-nums">
+                              gate {diag.off_nadir_limit_deg.toFixed(1)}°
+                            </span>
+                          )}
+                          {results[r.id]?.simulate?.score?.Q_smear === 1 && (
+                            <span className="mono text-[var(--phos)]">
+                              ✓ zero smear
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+                <div className="flex items-baseline gap-3 border-l border-[var(--line-bright)] bg-[var(--bg-lift)] px-6 py-3">
+                  <span className="mono text-[10px] uppercase tracking-[0.22em] text-[var(--fg-mute)]">
+                    S_total
+                  </span>
+                  <span
+                    className="numeric tabular-nums leading-none text-[var(--phos)]"
+                    style={{ fontSize: 28, letterSpacing: "-0.04em" }}
+                  >
+                    {mission.S_total.toFixed(3)}
+                  </span>
+                  <span className="mono text-[10px] tabular-nums text-[var(--fg-faint)]">
+                    {mission.done}/{mission.total}
+                  </span>
+                </div>
               </div>
             </section>
           )}
