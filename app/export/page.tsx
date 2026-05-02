@@ -23,11 +23,11 @@ export default function ExportPage() {
       <Navbar />
       <main className="flex-1 overflow-y-auto">
         <div className="mx-auto flex max-w-[1440px] flex-col gap-5 px-5 py-5 sm:px-6">
-          <header className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-baseline gap-4">
+          <header className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+            <div className="flex items-baseline gap-3 sm:gap-4">
               <span className="eyebrow text-[var(--fg-faint)]">Export</span>
               <h1
-                className="display-tight text-[22px] leading-[0.95] sm:text-[28px]"
+                className="display-tight text-[20px] leading-[0.95] sm:text-[28px]"
                 style={{ letterSpacing: "-0.04em" }}
               >
                 Schedules &amp; results, ready to copy.
@@ -75,7 +75,7 @@ export default function ExportPage() {
                 >
                   {json ? (
                     <pre
-                      className="mono max-h-72 overflow-auto border border-[var(--line)] bg-[var(--bg-sunk)] p-3 text-[11px] leading-[1.55] text-[var(--fg)]"
+                      className="mono max-h-72 overflow-auto border border-[var(--line)] bg-[var(--bg-sunk)] p-2.5 text-[10px] leading-[1.55] text-[var(--fg)] sm:p-3 sm:text-[11px]"
                       style={{ borderRadius: 2 }}
                     >
                       {json}

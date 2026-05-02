@@ -81,26 +81,29 @@ export default function ConsolePage() {
 
       {/* ── Dense case selector + run action header ─────────────────── */}
       <div className="shrink-0 border-b border-[var(--line)] bg-[var(--bg)]">
-        <div className="flex items-stretch overflow-x-auto">
-          <CaseTab
-            active={isOverview}
-            onClick={() => selectCase("all")}
-            code="ALL"
-            label="Overview"
-          />
-          {(cases ?? []).map((c, i) => (
+        <div className="flex flex-col sm:flex-row sm:items-stretch">
+          {/* Tabs row */}
+          <div className="flex items-stretch overflow-x-auto sm:flex-1">
             <CaseTab
-              key={c.id}
-              active={c.id === selectedCaseId}
-              onClick={() => selectCase(c.id)}
-              code={`C·${String(i + 1).padStart(2, "0")}`}
-              label={c.name}
+              active={isOverview}
+              onClick={() => selectCase("all")}
+              code="ALL"
+              label="Overview"
             />
-          ))}
+            {(cases ?? []).map((c, i) => (
+              <CaseTab
+                key={c.id}
+                active={c.id === selectedCaseId}
+                onClick={() => selectCase(c.id)}
+                code={`C·${String(i + 1).padStart(2, "0")}`}
+                label={c.name}
+              />
+            ))}
+          </div>
 
-          {/* Case metadata + run action */}
+          {/* Action row — always reachable */}
           {activeCase && (
-            <div className="ml-auto flex shrink-0 items-stretch border-l border-[var(--line)]">
+            <div className="flex items-stretch border-t border-[var(--line)] sm:border-l sm:border-t-0">
               <div className="hidden items-center gap-5 px-5 sm:flex">
                 <span className="mono text-[10px] tabular-nums text-[var(--fg-mute)]">
                   {new Date(activeCase.pass_start_utc)
@@ -127,14 +130,16 @@ export default function ConsolePage() {
                   {DIFFICULTY_LABEL[activeCase.difficulty].toLowerCase()}
                 </span>
               </div>
-              <div className="flex items-center gap-3 border-l border-[var(--line)] px-4">
-                <StatusDot
-                  status={isRunning ? "warn" : "phos"}
-                  pulse={isRunning}
-                />
-                <span className="mono hidden text-[10px] uppercase tracking-[0.22em] text-[var(--fg-mute)] sm:inline">
-                  {isRunning ? "Transmitting" : "Standby"}
-                </span>
+              <div className="flex flex-1 items-center justify-between gap-3 px-4 py-2.5 sm:flex-none sm:justify-start sm:border-l sm:border-[var(--line)] sm:py-0">
+                <div className="flex items-center gap-2">
+                  <StatusDot
+                    status={isRunning ? "warn" : "phos"}
+                    pulse={isRunning}
+                  />
+                  <span className="mono text-[10px] uppercase tracking-[0.22em] text-[var(--fg-mute)]">
+                    {isRunning ? "Transmitting" : "Standby"}
+                  </span>
+                </div>
                 <RunButton
                   size="sm"
                   onClick={() => run(selectedCaseId)}
@@ -145,16 +150,18 @@ export default function ConsolePage() {
           )}
 
           {isOverview && (
-            <div className="ml-auto flex shrink-0 items-center gap-3 border-l border-[var(--line)] px-4">
-              <StatusDot
-                status={isRunningAll ? "warn" : "phos"}
-                pulse={isRunningAll}
-              />
-              <span className="mono hidden text-[10px] uppercase tracking-[0.22em] text-[var(--fg-mute)] sm:inline">
-                {isRunningAll
-                  ? `Running ${runningAllCaseId?.toUpperCase() ?? "…"}`
-                  : "All cases"}
-              </span>
+            <div className="flex items-center justify-between gap-3 border-t border-[var(--line)] px-4 py-2.5 sm:border-l sm:border-t-0 sm:py-0">
+              <div className="flex items-center gap-2">
+                <StatusDot
+                  status={isRunningAll ? "warn" : "phos"}
+                  pulse={isRunningAll}
+                />
+                <span className="mono text-[10px] uppercase tracking-[0.22em] text-[var(--fg-mute)]">
+                  {isRunningAll
+                    ? `Run ${runningAllCaseId?.toUpperCase() ?? "…"}`
+                    : "All cases"}
+                </span>
+              </div>
               <RunButton
                 size="sm"
                 label="Run All"
@@ -181,60 +188,50 @@ export default function ConsolePage() {
           {/* Mission scores strip — always visible */}
           {mission && mission.rows.length > 0 && (
             <div
-              className="flex overflow-hidden border border-[var(--line)]"
+              className="flex flex-col overflow-hidden border border-[var(--line)] sm:flex-row"
               style={{ borderRadius: 2 }}
             >
-              {mission.rows.map((r, i) => (
-                <button
-                  key={r.id}
-                  type="button"
-                  onClick={() => selectCase(r.id)}
-                  className={cn(
-                    "flex flex-1 flex-col gap-1 border-r border-[var(--line)] px-4 py-3 text-left transition-colors last:border-r-0 hover:bg-[var(--bg-lift)]",
-                    r.id === selectedCaseId && "bg-[var(--bg-lift)]"
-                  )}
-                >
-                  <span className="mono text-[9px] tabular-nums tracking-[0.16em] text-[var(--fg-faint)]">
-                    C·{String(i + 1).padStart(2, "0")}
-                  </span>
-                  <span
-                    className="numeric tabular-nums leading-none"
-                    style={{
-                      fontSize: 20,
-                      letterSpacing: "-0.035em",
-                      color: r.S !== null ? "var(--fg)" : "var(--fg-ghost)",
-                    }}
+              <div className="flex flex-1">
+                {mission.rows.map((r, i) => (
+                  <button
+                    key={r.id}
+                    type="button"
+                    onClick={() => selectCase(r.id)}
+                    className={cn(
+                      "flex flex-1 flex-col gap-1 border-r border-[var(--line)] px-3 py-3 text-left transition-colors last:border-r-0 hover:bg-[var(--bg-lift)] sm:px-4",
+                      r.id === selectedCaseId && "bg-[var(--bg-lift)]"
+                    )}
                   >
-                    {r.S !== null ? r.S.toFixed(3) : "———"}
-                  </span>
-                  <span className="mono text-[9px] tabular-nums text-[var(--fg-faint)]">
-                    ×{r.weight.toFixed(2)}
-                  </span>
-                </button>
-              ))}
-              <div className="flex flex-col gap-1 px-4 py-3">
+                    <span className="mono text-[9px] tabular-nums tracking-[0.16em] text-[var(--fg-faint)]">
+                      C·{String(i + 1).padStart(2, "0")}
+                    </span>
+                    <span
+                      className="numeric tabular-nums leading-none"
+                      style={{
+                        fontSize: 18,
+                        letterSpacing: "-0.035em",
+                        color: r.S !== null ? "var(--fg)" : "var(--fg-ghost)",
+                      }}
+                    >
+                      {r.S !== null ? r.S.toFixed(3) : "———"}
+                    </span>
+                    <span className="mono text-[9px] tabular-nums text-[var(--fg-faint)]">
+                      ×{r.weight.toFixed(2)}
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center justify-between gap-3 border-t border-[var(--line)] bg-[var(--bg-sunk)] px-4 py-2.5 sm:border-l sm:border-t-0 sm:bg-transparent sm:px-5 sm:py-3">
                 <span className="eyebrow text-[var(--fg-faint)]">S_total</span>
                 <span
                   className="numeric tabular-nums leading-none text-[var(--phos)]"
-                  style={{ fontSize: 20, letterSpacing: "-0.04em" }}
+                  style={{ fontSize: 22, letterSpacing: "-0.04em" }}
                 >
                   {mission.done === mission.total
                     ? mission.S_total.toFixed(3)
                     : "—"}
                 </span>
               </div>
-            </div>
-          )}
-
-          {/* Controls — case mode only */}
-          {!isOverview && (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Module label="Strategy">
-                <StrategyPicker />
-              </Module>
-              <Module label="Margins">
-                <ParameterSliders />
-              </Module>
             </div>
           )}
 
@@ -462,6 +459,16 @@ export default function ConsolePage() {
                   <PassTimeline />
                 </ErrorBoundary>
               </Module>
+
+              {/* Controls — below the readout */}
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                <Module label="Strategy">
+                  <StrategyPicker />
+                </Module>
+                <Module label="Margins">
+                  <ParameterSliders />
+                </Module>
+              </div>
 
               {/* Frames — collapsible */}
               <Module

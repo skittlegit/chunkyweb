@@ -59,26 +59,28 @@ export default function ComparePage() {
         <div className="mx-auto flex max-w-[1440px] flex-col gap-5 px-5 py-5 sm:px-6">
 
           {/* Page header */}
-          <header className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-baseline gap-4">
+          <header className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+            <div className="flex items-baseline gap-3 sm:gap-4">
               <span className="eyebrow text-[var(--fg-faint)]">Compare</span>
               <h1
-                className="display-tight text-[22px] leading-[0.95] sm:text-[28px]"
+                className="display-tight text-[20px] leading-[0.95] sm:text-[28px]"
                 style={{ letterSpacing: "-0.04em" }}
               >
                 Three passes, one weighted total.
               </h1>
             </div>
-            <div className="flex items-center gap-3">
-              <StatusDot
-                status={isRunningAll ? "warn" : "phos"}
-                pulse={isRunningAll}
-              />
-              <span className="mono hidden text-[10px] uppercase tracking-[0.22em] text-[var(--fg-mute)] sm:inline">
-                {isRunningAll
-                  ? `Running ${runningAllCaseId?.toUpperCase() ?? "…"}`
-                  : "All cases"}
-              </span>
+            <div className="flex items-center justify-between gap-3 sm:justify-end">
+              <div className="flex items-center gap-2">
+                <StatusDot
+                  status={isRunningAll ? "warn" : "phos"}
+                  pulse={isRunningAll}
+                />
+                <span className="mono text-[10px] uppercase tracking-[0.22em] text-[var(--fg-mute)]">
+                  {isRunningAll
+                    ? `Run ${runningAllCaseId?.toUpperCase() ?? "…"}`
+                    : "All cases"}
+                </span>
+              </div>
               <RunButton
                 label="Run All"
                 loadingLabel="Running…"
