@@ -23,14 +23,16 @@ export default function ExportPage() {
       <Navbar />
       <main className="flex-1 overflow-y-auto">
         <div className="mx-auto flex max-w-[1600px] flex-col gap-5 px-4 py-5 sm:p-5">
-          <header className="flex flex-col gap-1 border-b border-[var(--line)] pb-5">
-            <span className="kbd">Export</span>
-            <h1
-              className="display-tight text-[26px] leading-[0.95] sm:text-[34px]"
-              style={{ letterSpacing: "-0.04em" }}
-            >
-              Schedules &amp; results, ready to copy.
-            </h1>
+          <header className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-baseline gap-4">
+              <span className="eyebrow text-[var(--fg-faint)]">Export</span>
+              <h1
+                className="display-tight text-[22px] leading-[0.95] sm:text-[28px]"
+                style={{ letterSpacing: "-0.04em" }}
+              >
+                Schedules &amp; results, ready to copy.
+              </h1>
+            </div>
           </header>
 
           <div className="grid grid-cols-1 gap-5">

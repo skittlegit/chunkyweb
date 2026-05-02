@@ -67,7 +67,7 @@ export function ScoreCard({ score }: ScoreCardProps) {
       </div>
 
       {/* Components */}
-      <div className="grid grid-cols-2 gap-x-4 gap-y-4">
+      <div className="grid grid-cols-2 gap-2">
         {COMPONENTS.map((it) => {
           const raw = score[it.key];
           const num =
@@ -75,22 +75,17 @@ export function ScoreCard({ score }: ScoreCardProps) {
           return (
             <div
               key={it.key}
-              className="flex flex-col gap-1 border-l border-[var(--line)] pl-3"
+              className="flex flex-col gap-2 border border-[var(--line)] bg-[var(--bg-sunk)] p-3"
             >
               <div className="flex items-baseline justify-between">
-                <span className="text-[12px] text-[var(--fg)]">{it.full}</span>
+                <span className="text-[11px] text-[var(--fg-mute)]">{it.full}</span>
                 <span className="mono text-[9px] tabular-nums tracking-[0.12em] text-[var(--fg-faint)]">
                   {it.sym}
                 </span>
               </div>
-              <div className="flex items-baseline gap-1.5">
-                <span className="numeric text-[26px] leading-none text-[var(--fg)]">
-                  {num.toFixed(2)}
-                </span>
-                <span className="mono text-[9px] tabular-nums text-[var(--fg-faint)]">
-                  /1
-                </span>
-              </div>
+              <span className="numeric text-[26px] leading-none text-[var(--fg)]">
+                {num.toFixed(2)}
+              </span>
               <div className="relative h-[2px] w-full bg-[var(--line)]">
                 <span
                   aria-hidden

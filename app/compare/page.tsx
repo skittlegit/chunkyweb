@@ -3,18 +3,19 @@
 import { Navbar } from "@/components/layout/Navbar";
 import { StatusBar } from "@/components/layout/StatusBar";
 import { Module } from "@/components/shared/Module";
-import { ScoreCard } from "@/components/score/ScoreCard";
 import { useAppStore } from "@/store/useAppStore";
 import { useCases } from "@/hooks/useCases";
 import { useRunPass } from "@/hooks/useRunPass";
-import { Loader2, Play } from "lucide-react";
+import { RunButton } from "@/components/controls/RunButton";
+import { StatusDot } from "@/components/shared/StatusDot";
+import { S_ORBIT_MAX } from "@/lib/constants";
 
 export default function ComparePage() {
   const { data: cases } = useCases();
   const results = useAppStore((s) => s.results);
-  const { run, isRunning } = useRunPass();
+  const { run, runAll, runningAllCaseId, isRunning } = useRunPass();
 
-  const runAll = async () => {
+  const runAllCases = async () => {
     if (!cases) return;
     for (const c of cases) {
       try {
@@ -27,94 +28,203 @@ export default function ComparePage() {
 
   const weighted = (cases ?? []).map((c) => ({
     id: c.id,
+    name: c.name,
     weight: c.weight,
-    score: results[c.id]?.simulate?.score.S_orbit ?? null,
+    score: results[c.id]?.simulate?.score ?? null,
   }));
-  const allDone = weighted.length > 0 && weighted.every((w) => w.score != null);
+  const allDone =
+    weighted.length > 0 && weighted.every((w) => w.score != null);
   const sTotal = allDone
-    ? weighted.reduce((a, w) => a + w.weight * (w.score ?? 0), 0)
+    ? weighted.reduce((a, w) => a + w.weight * (w.score?.S_orbit ?? 0), 0)
     : null;
+  const isRunningAll = runningAllCaseId !== null;
+
+  const SCORE_ROWS: {
+    key: "C" | "eta_E" | "eta_T" | "Q_smear" | "S_orbit";
+    label: string;
+    sym: string;
+    bold?: boolean;
+  }[] = [
+    { key: "S_orbit", label: "S_orbit", sym: "Score", bold: true },
+    { key: "C", label: "Coverage", sym: "C" },
+    { key: "eta_E", label: "Energy", sym: "η_E" },
+    { key: "eta_T", label: "Time", sym: "η_T" },
+    { key: "Q_smear", label: "Smear quality", sym: "Q" },
+  ];
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-[var(--bg)] text-[var(--fg)]">
       <Navbar />
       <main className="flex-1 overflow-y-auto">
         <div className="mx-auto flex max-w-[1600px] flex-col gap-5 px-4 py-5 sm:p-5">
-          <header className="flex flex-wrap items-end justify-between gap-4 border-b border-[var(--line)] pb-5">
-            <div className="flex flex-col gap-1">
-              <span className="kbd">Compare</span>
+
+          {/* Page header */}
+          <header className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-baseline gap-4">
+              <span className="eyebrow text-[var(--fg-faint)]">Compare</span>
               <h1
-                className="display-tight text-[26px] leading-[0.95] sm:text-[34px]"
+                className="display-tight text-[22px] leading-[0.95] sm:text-[28px]"
                 style={{ letterSpacing: "-0.04em" }}
               >
                 Three passes, one weighted total.
               </h1>
             </div>
-            <button
-              type="button"
-              onClick={runAll}
-              disabled={isRunning || !cases}
-              className="mono inline-flex h-10 items-center gap-2.5 border border-[var(--phos)] bg-[var(--phos)] px-5 text-[10px] uppercase tracking-[0.22em] text-[var(--bg)] transition-colors hover:bg-[var(--phos-deep)] disabled:cursor-not-allowed disabled:border-[var(--line)] disabled:bg-transparent disabled:text-[var(--fg-faint)]"
-              style={{ borderRadius: 2 }}
-            >
-              {isRunning ? (
-                <Loader2 size={13} className="animate-spin" />
-              ) : (
-                <Play size={11} fill="currentColor" />
-              )}
-              {isRunning ? "Computing" : "Run all"}
-            </button>
+            <div className="flex items-center gap-3">
+              <StatusDot
+                status={isRunningAll ? "warn" : "phos"}
+                pulse={isRunningAll}
+              />
+              <span className="mono hidden text-[10px] uppercase tracking-[0.22em] text-[var(--fg-mute)] sm:inline">
+                {isRunningAll
+                  ? `Running ${runningAllCaseId?.toUpperCase() ?? "…"}`
+                  : "All cases"}
+              </span>
+              <RunButton
+                label="Run All"
+                loadingLabel="Running…"
+                onClick={runAllCases}
+                loading={isRunningAll}
+                disabled={isRunning || !cases?.length}
+              />
+            </div>
           </header>
 
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-            {(cases ?? []).map((c, i) => {
-              const r = results[c.id];
-              return (
-                <Module
-                  key={c.id}
-                  label={`Case ${String(i + 1).padStart(2, "0")}`}
-                  tag={c.id.toUpperCase()}
-                  hint={`weight ×${c.weight.toFixed(2)} · ${c.difficulty}`}
-                  variant={r?.simulate ? "on" : "default"}
-                  actions={
-                    <button
-                      onClick={() => run(c.id)}
-                      disabled={isRunning}
-                      className="mono border border-[var(--line-bright)] bg-transparent px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-[var(--fg-mute)] transition-colors hover:border-[var(--phos)] hover:text-[var(--phos)] disabled:cursor-not-allowed disabled:opacity-50"
-                      style={{ borderRadius: 2 }}
-                    >
-                      Run
-                    </button>
-                  }
-                >
-                  {r?.simulate ? (
-                    <ScoreCard score={r.simulate.score} />
-                  ) : (
-                    <div className="flex h-56 items-center justify-center">
-                      <p className="text-[13px] italic text-[var(--fg-mute)]">
-                        Not run yet — score will appear here.
-                      </p>
-                    </div>
-                  )}
-                </Module>
-              );
-            })}
-          </div>
+          {/* Comparison matrix */}
+          <Module label="Comparison" hint="Score components side by side">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[480px] border-collapse">
+                {/* Column headers */}
+                <thead>
+                  <tr className="border-b border-[var(--line-bright)]">
+                    <th className="pb-3 pr-6 text-left">
+                      <span className="eyebrow">Component</span>
+                    </th>
+                    {weighted.map((w, i) => (
+                      <th key={w.id} className="pb-3 pr-4 text-left last:pr-0">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="mono text-[10px] tabular-nums tracking-[0.16em] text-[var(--fg-faint)]">
+                            C·{String(i + 1).padStart(2, "0")}
+                          </span>
+                          <span
+                            className="display text-[14px] text-[var(--fg)]"
+                            style={{ letterSpacing: "-0.015em" }}
+                          >
+                            {w.name}
+                          </span>
+                          <div className="flex items-center gap-3">
+                            <span className="mono text-[10px] tabular-nums text-[var(--fg-mute)]">
+                              ×{w.weight.toFixed(2)}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => run(w.id)}
+                              disabled={isRunning}
+                              className="mono border border-[var(--line-bright)] bg-transparent px-2 py-0.5 text-[9px] uppercase tracking-[0.16em] text-[var(--fg-mute)] transition-colors hover:border-[var(--phos)] hover:text-[var(--phos)] disabled:cursor-not-allowed disabled:opacity-40"
+                              style={{ borderRadius: 2 }}
+                            >
+                              {runningAllCaseId === w.id ? "…" : "Run"}
+                            </button>
+                          </div>
+                        </div>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
 
-          <Module label="Total" tag="ΣΣ·01" hint="Weighted sum across all cases">
-            <div className="flex flex-col gap-4">
+                <tbody>
+                  {SCORE_ROWS.map((row) => (
+                    <tr
+                      key={row.key}
+                      className={
+                        "border-b border-[var(--line)] " +
+                        (row.bold ? "bg-[var(--bg-sunk)]" : "")
+                      }
+                    >
+                      <td className="py-3 pr-6">
+                        <div className="flex items-baseline gap-2">
+                          <span
+                            className={
+                              row.bold
+                                ? "mono text-[11px] uppercase tracking-[0.18em] text-[var(--fg)]"
+                                : "text-[12px] text-[var(--fg-mute)]"
+                            }
+                          >
+                            {row.label}
+                          </span>
+                          <span className="mono text-[9px] tabular-nums text-[var(--fg-faint)]">
+                            {row.sym}
+                          </span>
+                        </div>
+                      </td>
+                      {weighted.map((w) => {
+                        const val = w.score ? w.score[row.key] : null;
+                        const num =
+                          typeof val === "number" && Number.isFinite(val)
+                            ? val
+                            : null;
+                        const max =
+                          row.key === "S_orbit" ? S_ORBIT_MAX : 1;
+                        return (
+                          <td key={w.id} className="py-3 pr-4 last:pr-0">
+                            {num !== null ? (
+                              <div className="flex flex-col gap-1.5">
+                                <span
+                                  className="numeric tabular-nums leading-none"
+                                  style={{
+                                    fontSize: row.bold ? 28 : 22,
+                                    letterSpacing: "-0.04em",
+                                    color: row.bold
+                                      ? "var(--phos)"
+                                      : "var(--fg)",
+                                  }}
+                                >
+                                  {num.toFixed(3)}
+                                </span>
+                                <div className="relative h-[2px] w-24 bg-[var(--line)]">
+                                  <span
+                                    aria-hidden
+                                    className="absolute inset-y-0 left-0 bg-[var(--fg-mute)]"
+                                    style={{
+                                      width: `${Math.max(0, Math.min(1, num / max)) * 100}%`,
+                                      background: row.bold
+                                        ? "var(--phos)"
+                                        : undefined,
+                                      transition:
+                                        "width 0.5s cubic-bezier(.2,.7,.2,1)",
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="mono text-[13px] text-[var(--fg-ghost)]">
+                                —
+                              </span>
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Module>
+
+          {/* Mission total */}
+          <Module label="Total" tag="S_total">
+            <div className="flex flex-col gap-3">
               <code className="mono break-words text-[12px] leading-relaxed text-[var(--fg-mute)]">
                 S_total ={" "}
                 {weighted
                   .map(
                     (w) =>
-                      `${w.weight.toFixed(2)}·${w.score?.toFixed(3) ?? "—"}`
+                      `${w.weight.toFixed(2)}·${w.score?.S_orbit.toFixed(3) ?? "—"}`
                   )
                   .join("  +  ")}
               </code>
-              <div className="flex items-baseline gap-3 border-t border-[var(--line)] pt-3">
+              <div className="flex items-baseline gap-4 border-t border-[var(--line)] pt-4">
                 <span
-                  className="numeric leading-none text-[var(--phos)]"
+                  className="numeric tabular-nums leading-none text-[var(--phos)]"
                   style={{ fontSize: 64, letterSpacing: "-0.05em" }}
                 >
                   {sTotal != null ? sTotal.toFixed(3) : "—"}
@@ -124,6 +234,13 @@ export default function ComparePage() {
                     Run all 3 cases to compute total.
                   </span>
                 )}
+                {sTotal != null && (
+                  <div className="mb-1 flex flex-col self-end text-[var(--fg-faint)]">
+                    <span className="mono text-[10px] uppercase tracking-[0.18em]">
+                      of {(S_ORBIT_MAX * (cases ?? []).reduce((a, c) => a + c.weight, 0)).toFixed(2)} max
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </Module>
@@ -132,4 +249,4 @@ export default function ComparePage() {
       <StatusBar />
     </div>
   );
-}
+}

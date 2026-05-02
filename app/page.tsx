@@ -19,6 +19,7 @@ import { RunButton } from "@/components/controls/RunButton";
 import { StatusDot } from "@/components/shared/StatusDot";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { ErrorState } from "@/components/shared/ErrorState";
+import { cn } from "@/lib/cn";
 import {
   DIFFICULTY_COLOR,
   DIFFICULTY_LABEL,
@@ -49,8 +50,6 @@ export default function ConsolePage() {
   // estimate (which was wrong for all three cases).
   const { data: ephemeris } = useEphemeris(selectedCaseId);
   const closestOna = ephemeris?.closest_approach?.min_off_nadir_deg;
-  const onaLimit = result?.plan?.diagnostics?.off_nadir_limit_deg;
-  const planDiag = result?.plan?.diagnostics;
 
   // Mission total — weighted sum across all cases that have simulated.
   // Per chunkyapi/HANDOFF.md: hackathon weights are 0.25 / 0.35 / 0.40 (sum
@@ -79,239 +78,195 @@ export default function ConsolePage() {
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-[var(--bg)] text-[var(--fg)]">
       <Navbar />
-      <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto flex max-w-[1480px] flex-col gap-5 px-4 py-5 sm:gap-7 sm:px-6 sm:py-7">
-          {/* Cases tab strip — `All` first, then each case. Lives inside the
-              Console page (not the navbar) so it doesn't crowd the global
-              chrome. Mobile: horizontally scrollable lane. */}
-          <section className="flex flex-col gap-2">
-            <div className="flex items-baseline justify-between">
-              <span className="kbd">Cases</span>
-              <span className="mono hidden text-[10px] uppercase tracking-[0.18em] text-[var(--fg-faint)] sm:inline">
-                pick one to inspect — or stay on All for the mission overview
-              </span>
-            </div>
-            <div
-              className="flex items-stretch overflow-x-auto border border-[var(--line)] bg-[var(--bg-soft)]"
-              style={{ borderRadius: 6 }}
-            >
-              <CaseTab
-                active={isOverview}
-                onClick={() => selectCase("all")}
-                code="ALL"
-                label="Overview"
-              />
-              {(cases ?? []).map((c, i) => (
-                <CaseTab
-                  key={c.id}
-                  active={c.id === selectedCaseId}
-                  onClick={() => selectCase(c.id)}
-                  code={`C·${String(i + 1).padStart(2, "0")}`}
-                  label={c.name}
-                />
-              ))}
-            </div>
-          </section>
 
+      {/* ── Dense case selector + run action header ─────────────────── */}
+      <div className="shrink-0 border-b border-[var(--line)] bg-[var(--bg)]">
+        <div className="flex items-stretch overflow-x-auto">
+          <CaseTab
+            active={isOverview}
+            onClick={() => selectCase("all")}
+            code="ALL"
+            label="Overview"
+          />
+          {(cases ?? []).map((c, i) => (
+            <CaseTab
+              key={c.id}
+              active={c.id === selectedCaseId}
+              onClick={() => selectCase(c.id)}
+              code={`C·${String(i + 1).padStart(2, "0")}`}
+              label={c.name}
+            />
+          ))}
+
+          {/* Case metadata + run action */}
           {activeCase && (
-            <>
-              <section className="flex flex-wrap items-baseline gap-x-6 gap-y-1.5 sm:gap-x-8">
-                <h1
-                  className="display-tight text-[22px] leading-[1] text-[var(--fg)] sm:text-[28px]"
-                  style={{ letterSpacing: "-0.035em" }}
-                >
-                  {activeCase.name}
-                </h1>
-                <span className="mono text-[11px] tabular-nums text-[var(--fg-mute)]">
+            <div className="ml-auto flex shrink-0 items-stretch border-l border-[var(--line)]">
+              <div className="hidden items-center gap-5 px-5 sm:flex">
+                <span className="mono text-[10px] tabular-nums text-[var(--fg-mute)]">
                   {new Date(activeCase.pass_start_utc)
                     .toUTCString()
                     .slice(17, 25)}
                   Z
                 </span>
-                <span className="mono text-[11px] text-[var(--fg-faint)]">
-                  ONA min{" "}
+                <span className="mono text-[10px] tabular-nums text-[var(--fg-faint)]">
+                  ONA{" "}
                   {typeof closestOna === "number"
-                    ? `${closestOna.toFixed(2)}°`
+                    ? `${closestOna.toFixed(1)}°`
                     : "—"}
                 </span>
-                <span className="mono text-[11px] text-[var(--fg-faint)]">
-                  w {(scheme.weights[activeCase.id] ?? activeCase.weight).toFixed(2)}
+                <span className="mono text-[10px] tabular-nums text-[var(--fg-faint)]">
+                  w{" "}
+                  {(
+                    scheme.weights[activeCase.id] ?? activeCase.weight
+                  ).toFixed(2)}
                 </span>
-                {typeof onaLimit === "number" && (
-                  <span className="mono text-[11px] text-[var(--fg-faint)]">
-                    gate ≤ {onaLimit.toFixed(1)}°
-                  </span>
-                )}
-                {planDiag && typeof planDiag.n_tiles_total === "number" && (
-                  <span className="mono text-[11px] text-[var(--fg-faint)]">
-                    {planDiag.n_tiles_imaged}/{planDiag.n_tiles_total} kept
-                  </span>
-                )}
                 <span
-                  className="mono text-[11px]"
+                  className="mono text-[10px]"
                   style={{ color: DIFFICULTY_COLOR[activeCase.difficulty] }}
                 >
                   {DIFFICULTY_LABEL[activeCase.difficulty].toLowerCase()}
                 </span>
-              </section>
-
-              {/* Per-case Run action bar */}
-              <div className="flex items-center gap-3 border border-[var(--line)] bg-[var(--bg-soft)] px-4 py-2.5 sm:px-5" style={{ borderRadius: 6 }}>
+              </div>
+              <div className="flex items-center gap-3 border-l border-[var(--line)] px-4">
                 <StatusDot
                   status={isRunning ? "warn" : "phos"}
                   pulse={isRunning}
                 />
-                <span className="mono text-[10px] uppercase tracking-[0.22em] text-[var(--fg-mute)]">
+                <span className="mono hidden text-[10px] uppercase tracking-[0.22em] text-[var(--fg-mute)] sm:inline">
                   {isRunning ? "Transmitting" : "Standby"}
                 </span>
-                <span className="mono text-[10px] tabular-nums text-[var(--fg-faint)]">
-                  ·
-                </span>
-                <span className="mono text-[10px] tabular-nums text-[var(--fg-faint)]">
-                  {selectedCaseId.toUpperCase()}
-                </span>
-                <div className="ml-auto">
-                  <RunButton
-                    size="sm"
-                    onClick={() => run(selectedCaseId)}
-                    loading={isRunning}
-                  />
-                </div>
+                <RunButton
+                  size="sm"
+                  onClick={() => run(selectedCaseId)}
+                  loading={isRunning}
+                />
               </div>
-            </>
+            </div>
           )}
 
-          {error && (
-            <ErrorState title="Pass run failed" message={error.message} />
+          {isOverview && (
+            <div className="ml-auto flex shrink-0 items-center gap-3 border-l border-[var(--line)] px-4">
+              <StatusDot
+                status={isRunningAll ? "warn" : "phos"}
+                pulse={isRunningAll}
+              />
+              <span className="mono hidden text-[10px] uppercase tracking-[0.22em] text-[var(--fg-mute)] sm:inline">
+                {isRunningAll
+                  ? `Running ${runningAllCaseId?.toUpperCase() ?? "…"}`
+                  : "All cases"}
+              </span>
+              <RunButton
+                size="sm"
+                label="Run All"
+                loadingLabel="Running…"
+                onClick={() => runAll((cases ?? []).map((c) => c.id))}
+                loading={isRunningAll}
+                disabled={isRunning || !cases?.length}
+              />
+            </div>
           )}
+        </div>
+      </div>
 
-          {/* Mission strip — per-case scores + cumulative S_total. */}
+      {error && (
+        <div className="shrink-0 border-b border-[var(--line)] px-4 py-2 sm:px-5">
+          <ErrorState title="Pass run failed" message={error.message} />
+        </div>
+      )}
+
+      {/* ── Body: left rail + main panels ───────────────────────────── */}
+      <div className="flex flex-1 flex-col overflow-y-auto lg:flex-row lg:overflow-hidden">
+
+        {/* Left control rail */}
+        <aside className="flex w-full shrink-0 flex-col border-b border-[var(--line)] lg:w-[260px] lg:overflow-y-auto lg:border-b-0 lg:border-r">
+
+          {/* Mission mini — per-case scores + S_total */}
           {mission && mission.rows.length > 0 && (
-            <section className="flex flex-col gap-2">
-              <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-                <span className="mono text-[10px] uppercase tracking-[0.22em] text-[var(--fg-faint)]">
-                  S_total ={" "}
-                  {mission.rows
-                    .map(
-                      (r, i) =>
-                        `${r.weight.toFixed(2)}·score_${i + 1}`
-                    )
-                    .join(" + ")}
+            <div className="border-b border-[var(--line)]">
+              <div className="px-4 py-2.5 sm:px-5">
+                <span className="eyebrow">Mission</span>
+              </div>
+              {mission.rows.map((r, i) => {
+                const active = r.id === selectedCaseId;
+                return (
+                  <button
+                    key={r.id}
+                    type="button"
+                    onClick={() => selectCase(r.id)}
+                    className={cn(
+                      "flex w-full items-baseline justify-between border-t border-[var(--line)] px-4 py-2 text-left transition-colors hover:bg-[var(--bg-lift)] sm:px-5",
+                      active && "bg-[var(--bg-lift)]"
+                    )}
+                  >
+                    <div className="flex items-baseline gap-2.5">
+                      <span className="mono text-[10px] tabular-nums tracking-[0.16em] text-[var(--fg-faint)]">
+                        C·{String(i + 1).padStart(2, "0")}
+                      </span>
+                      <span
+                        className="numeric tabular-nums leading-none text-[var(--fg)]"
+                        style={{ fontSize: 20, letterSpacing: "-0.035em" }}
+                      >
+                        {r.S !== null ? r.S.toFixed(3) : "———"}
+                      </span>
+                    </div>
+                    <span className="mono text-[10px] tabular-nums text-[var(--fg-mute)]">
+                      ×{r.weight.toFixed(2)}
+                    </span>
+                  </button>
+                );
+              })}
+              <div className="flex items-baseline justify-between border-t border-[var(--line-bright)] px-4 py-2.5 sm:px-5">
+                <span className="eyebrow">S_total</span>
+                <span
+                  className="numeric tabular-nums leading-none text-[var(--phos)]"
+                  style={{ fontSize: 22, letterSpacing: "-0.04em" }}
+                >
+                  {mission.done === mission.total
+                    ? mission.S_total.toFixed(3)
+                    : "—"}
                 </span>
               </div>
-              <div
-                className="grid grid-cols-1 items-stretch border border-[var(--line)] bg-[var(--bg-soft)] sm:grid-cols-3 xl:grid-cols-[repeat(3,1fr)_auto]"
-                style={{ borderRadius: 6 }}
-              >
-                {mission.rows.map((r, i) => {
-                  const active = r.id === selectedCaseId;
-                  const diag =
-                    results[r.id]?.plan?.diagnostics;
-                  return (
-                    <div
-                      key={r.id}
-                      className={
-                        "flex flex-col gap-1 px-4 py-3 sm:px-5 " +
-                        (i > 0
-                          ? "border-t border-[var(--line)] sm:border-t-0 sm:border-l "
-                          : "") +
-                        (active ? "bg-[var(--bg-lift)]" : "")
-                      }
-                    >
-                      <div className="flex items-baseline gap-3">
-                        <span className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--fg-faint)]">
-                          C·{String(i + 1).padStart(2, "0")}
-                        </span>
-                        <span
-                          className="numeric tabular-nums leading-none text-[var(--fg)]"
-                          style={{ fontSize: 22, letterSpacing: "-0.035em" }}
-                        >
-                          {r.S !== null ? r.S.toFixed(3) : "———"}
-                        </span>
-                        <span className="mono text-[10px] tabular-nums text-[var(--fg-mute)]">
-                          ×{r.weight.toFixed(2)}
-                        </span>
-                      </div>
-                      {diag && typeof diag.n_tiles_total === "number" && (
-                        <div className="flex flex-wrap items-baseline gap-2 text-[10px] text-[var(--fg-faint)]">
-                          <span className="mono tabular-nums">
-                            {diag.n_tiles_imaged}/{diag.n_tiles_total} frames
-                          </span>
-                          {typeof diag.off_nadir_limit_deg === "number" && (
-                            <span className="mono tabular-nums">
-                              gate {diag.off_nadir_limit_deg.toFixed(1)}°
-                            </span>
-                          )}
-                          {results[r.id]?.simulate?.score?.Q_smear === 1 && (
-                            <span className="mono text-[var(--phos)]">
-                              ✓ zero smear
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-                <div className="flex items-baseline gap-3 border-t border-[var(--line-bright)] bg-[var(--bg-lift)] px-5 py-3 sm:col-span-3 sm:border-t xl:col-span-1 xl:border-t-0 xl:border-l xl:px-6">
-                  <span className="mono text-[10px] uppercase tracking-[0.22em] text-[var(--fg-mute)]">
-                    S_total
-                  </span>
-                  <span
-                    className="numeric tabular-nums leading-none text-[var(--phos)]"
-                    style={{ fontSize: 28, letterSpacing: "-0.04em" }}
-                  >
-                    {mission.S_total.toFixed(3)}
-                  </span>
-                  <span className="mono text-[10px] tabular-nums text-[var(--fg-faint)]">
-                    {mission.done}/{mission.total}
-                  </span>
-                </div>
-              </div>
-            </section>
+            </div>
           )}
 
-          {isOverview ? (
-            <>
-              {/* Run All action bar */}
-              <div
-                className="flex flex-wrap items-center gap-3 border border-[var(--line)] bg-[var(--bg-soft)] px-4 py-3 sm:px-5"
-                style={{ borderRadius: 6 }}
-              >
-                <div className="flex items-center gap-2">
-                  <StatusDot
-                    status={isRunningAll ? "warn" : "phos"}
-                    pulse={isRunningAll}
-                  />
-                  <span className="mono text-[10px] uppercase tracking-[0.22em] text-[var(--fg-mute)]">
-                    {isRunningAll
-                      ? `Running ${runningAllCaseId?.toUpperCase() ?? "…"}`
-                      : "All cases · standby"}
-                  </span>
-                </div>
-                <div className="ml-auto flex items-center gap-3">
-                  <span className="mono hidden text-[10px] text-[var(--fg-faint)] sm:inline">
-                    Runs Case 1 → 2 → 3 sequentially
-                  </span>
-                  <RunButton
-                    size="sm"
-                    label="Run All"
-                    loadingLabel="Running…"
-                    onClick={() =>
-                      runAll((cases ?? []).map((c) => c.id))
-                    }
-                    loading={isRunningAll}
-                    disabled={isRunning || !cases?.length}
-                  />
-                </div>
+          {/* Controls — only for individual case view */}
+          {!isOverview && (
+            <div className="flex flex-col gap-5 p-4 sm:p-5">
+              <div className="flex flex-col gap-3">
+                <span className="eyebrow">Strategy</span>
+                <StrategyPicker />
               </div>
+              <div className="flex flex-col gap-3">
+                <span className="eyebrow">Margins</span>
+                <ParameterSliders />
+              </div>
+            </div>
+          )}
+        </aside>
 
-              {/* Per-case breakdown table */}
+        {/* ── Main content panels ────────────────────────────────────── */}
+        <main className="flex flex-1 flex-col overflow-y-auto">
+          {isOverview ? (
+            <div className="p-4 sm:p-5">
               <Module label="Mission Breakdown" hint="Score components per case">
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[520px] border-collapse text-[12px]">
                     <thead>
                       <tr className="border-b border-[var(--line)]">
-                        {["Case", "Difficulty", "Pass UTC", "Weight", "C", "η_E", "η_T", "Q_smear", "S_orbit", "/ max", "Frames", "Status"].map((h) => (
+                        {[
+                          "Case",
+                          "Difficulty",
+                          "Pass UTC",
+                          "Weight",
+                          "C",
+                          "η_E",
+                          "η_T",
+                          "Q_smear",
+                          "S_orbit",
+                          "/ max",
+                          "Frames",
+                          "Status",
+                        ].map((h) => (
                           <th
                             key={h}
                             className="mono pb-2 pr-4 text-left text-[10px] uppercase tracking-[0.18em] text-[var(--fg-faint)] last:pr-0"
@@ -330,15 +285,19 @@ export default function ConsolePage() {
                         return (
                           <tr
                             key={c.id}
-                            className={
-                              "border-b border-[var(--line)] transition-colors " +
-                              (isActive ? "bg-[var(--bg-lift)]" : "")
-                            }
+                            className={cn(
+                              "border-b border-[var(--line)] transition-colors",
+                              isActive && "bg-[var(--bg-lift)]"
+                            )}
                           >
                             <td className="py-2.5 pr-4">
                               <div className="flex items-center gap-2">
                                 {isActive && (
-                                  <StatusDot status="warn" pulse className="shrink-0" />
+                                  <StatusDot
+                                    status="warn"
+                                    pulse
+                                    className="shrink-0"
+                                  />
                                 )}
                                 <button
                                   type="button"
@@ -352,19 +311,29 @@ export default function ConsolePage() {
                             <td className="py-2.5 pr-4">
                               <span
                                 className="mono text-[10px]"
-                                style={{ color: DIFFICULTY_COLOR[c.difficulty] }}
+                                style={{
+                                  color: DIFFICULTY_COLOR[c.difficulty],
+                                }}
                               >
                                 {DIFFICULTY_LABEL[c.difficulty].toLowerCase()}
                               </span>
                             </td>
                             <td className="mono py-2.5 pr-4 tabular-nums text-[var(--fg-mute)]">
-                              {new Date(c.pass_start_utc).toUTCString().slice(17, 25)}Z
+                              {new Date(c.pass_start_utc)
+                                .toUTCString()
+                                .slice(17, 25)}
+                              Z
                             </td>
-                            <td className="mono py-2.5 pr-4 tabular-nums text-[var(--fg-faint)]">
+                            <td className="mono py-2.5 pr-4 tabular-nums text-[var(--fg-mute)]">
                               {(scheme.weights[c.id] ?? c.weight).toFixed(2)}
                             </td>
-                            {(["C", "eta_E", "eta_T", "Q_smear"] as const).map((k) => (
-                              <td key={k} className="mono py-2.5 pr-4 tabular-nums text-[var(--fg-mute)]">
+                            {(
+                              ["C", "eta_E", "eta_T", "Q_smear"] as const
+                            ).map((k) => (
+                              <td
+                                key={k}
+                                className="mono py-2.5 pr-4 tabular-nums text-[var(--fg-mute)]"
+                              >
                                 {score ? score[k].toFixed(3) : "—"}
                               </td>
                             ))}
@@ -373,14 +342,21 @@ export default function ConsolePage() {
                             </td>
                             <td className="py-2.5 pr-4">
                               {score ? (
-                                <div className="flex h-1.5 w-16 overflow-hidden rounded-sm bg-[var(--bg-lift)]">
+                                <div className="flex h-1.5 w-16 overflow-hidden bg-[var(--bg-lift)]">
                                   <div
                                     className="h-full bg-[var(--phos)]"
-                                    style={{ width: `${(Math.min(score.S_orbit / S_ORBIT_MAX, 1) * 100).toFixed(1)}%` }}
+                                    style={{
+                                      width: `${(
+                                        Math.min(
+                                          score.S_orbit / S_ORBIT_MAX,
+                                          1
+                                        ) * 100
+                                      ).toFixed(1)}%`,
+                                    }}
                                   />
                                 </div>
                               ) : (
-                                <div className="h-1.5 w-16 rounded-sm bg-[var(--line)]" />
+                                <div className="h-1.5 w-16 bg-[var(--line)]" />
                               )}
                             </td>
                             <td className="mono py-2.5 pr-4 tabular-nums text-[var(--fg-faint)]">
@@ -390,11 +366,15 @@ export default function ConsolePage() {
                             </td>
                             <td className="mono py-2.5 tabular-nums">
                               {isActive ? (
-                                <span className="text-[var(--warn)]">running</span>
+                                <span className="text-[var(--warn)]">
+                                  running
+                                </span>
                               ) : score ? (
                                 <span className="text-[var(--phos)]">done</span>
                               ) : (
-                                <span className="text-[var(--fg-faint)]">pending</span>
+                                <span className="text-[var(--fg-faint)]">
+                                  pending
+                                </span>
                               )}
                             </td>
                           </tr>
@@ -404,17 +384,14 @@ export default function ConsolePage() {
                   </table>
                 </div>
               </Module>
-            </>
+            </div>
           ) : (
-            <>
-              <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1.7fr_1fr] xl:gap-6">
-                <Module
-                  label="Coverage"
-                  variant="live"
-                  contentClassName="p-0"
-                >
+            <div className="flex flex-col gap-4 p-4 sm:p-5">
+              {/* Coverage map + Score card */}
+              <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.7fr_1fr]">
+                <Module label="Coverage" variant="live" contentClassName="p-0">
                   <ErrorBoundary label="Coverage map">
-                    <div className="relative h-[360px] w-full sm:h-[420px] xl:h-[460px]">
+                    <div className="relative h-[360px] w-full xl:h-[460px]">
                       <CoverageMap />
                     </div>
                   </ErrorBoundary>
@@ -427,22 +404,14 @@ export default function ConsolePage() {
                   {result?.simulate ? (
                     <ScoreCard score={result.simulate.score} />
                   ) : (
-                    <div className="flex h-[260px] items-center justify-center sm:h-[400px]">
+                    <div className="flex h-[260px] items-center justify-center xl:h-[440px]">
                       <LoadingState message="Awaiting simulation" />
                     </div>
                   )}
                 </Module>
               </div>
 
-              <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 lg:gap-6">
-                <Module label="Strategy">
-                  <StrategyPicker />
-                </Module>
-                <Module label="Margins">
-                  <ParameterSliders />
-                </Module>
-              </div>
-
+              {/* Timeline */}
               <Module
                 label="Timeline"
                 hint="Off-nadir angle and shutter intervals"
@@ -452,6 +421,7 @@ export default function ConsolePage() {
                 </ErrorBoundary>
               </Module>
 
+              {/* Frames — collapsible */}
               <Module
                 label="Frames"
                 hint={
@@ -480,15 +450,15 @@ export default function ConsolePage() {
                   </p>
                 )}
               </Module>
-            </>
+            </div>
           )}
-        </div>
-      </main>
+        </main>
+      </div>
+
       <StatusBar />
     </div>
   );
 }
-
 function CaseTab({
   active,
   onClick,
@@ -504,12 +474,12 @@ function CaseTab({
     <button
       type="button"
       onClick={onClick}
-      className={
-        "relative flex shrink-0 items-baseline gap-2.5 border-r border-[var(--line)] px-4 py-2.5 text-left transition-colors last:border-r-0 sm:px-5 sm:py-3 " +
-        (active
+      className={cn(
+        "relative flex shrink-0 items-baseline gap-2.5 border-r border-[var(--line)] px-4 py-2.5 text-left transition-colors last:border-r-0 sm:px-5 sm:py-3",
+        active
           ? "bg-[var(--bg-lift)] text-[var(--fg)]"
-          : "text-[var(--fg-mute)] hover:bg-[var(--bg-soft)] hover:text-[var(--fg)]")
-      }
+          : "text-[var(--fg-mute)] hover:bg-[var(--bg-soft)] hover:text-[var(--fg)]"
+      )}
     >
       {active && (
         <span
@@ -520,12 +490,10 @@ function CaseTab({
       <span className="mono text-[10px] tabular-nums tracking-[0.16em] text-[var(--fg-faint)]">
         {code}
       </span>
-      <span
-        className="display text-[13px]"
-        style={{ letterSpacing: "-0.012em" }}
-      >
+      <span className="display text-[13px]" style={{ letterSpacing: "-0.012em" }}>
         {label}
       </span>
     </button>
   );
 }
+
