@@ -434,7 +434,6 @@ export default function ConsolePage() {
                     </tbody>
                   </table>
                 </div>
-                </div>
               </Module>
             </div>
           ) : (
