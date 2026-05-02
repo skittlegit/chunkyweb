@@ -429,22 +429,32 @@ function adaptSimulate(
   }
 
   // Synthesize per_frame from body_rates if backend didn't provide it.
+  // The simulate endpoint emits n_samples (=5) rate measurements per shutter;
+  // take the worst (max) of each group so one FrameResult == one shutter.
   let per_frame: SimulateResponse["per_frame"];
   if (Array.isArray(raw.per_frame)) {
     per_frame = raw.per_frame;
   } else {
     const rates = raw.body_rates_deg_per_s ?? [];
     const shutters = schedule?.shutters ?? [];
-    per_frame = rates.map((rate, i) => {
-      const sh = shutters[i];
+    const N_SAMPLES = 5; // must match simulate endpoint n_samples
+    per_frame = shutters.map((sh, i) => {
+      const start = i * N_SAMPLES;
+      let worstRate = 0;
+      for (let k = 0; k < N_SAMPLES; k++) {
+        const r = rates[start + k];
+        if (typeof r === "number" && r > worstRate) worstRate = r;
+      }
       const fp = sh?.footprint?.[0];
-      const smearOk = rate <= 0.05;
+      const smearOk = worstRate <= 0.05;
+      // off_nadir_deg is carried through on the shutter object by the backend.
+      const shRaw = sh as { off_nadir_deg?: number };
       return {
         shutter_index: i,
         t_start: sh?.t_start ?? 0,
         valid: smearOk,
-        body_rate_dps: rate,
-        off_nadir_deg: 0,
+        body_rate_dps: worstRate,
+        off_nadir_deg: Number(shRaw?.off_nadir_deg ?? 0),
         wheel_max_fraction: 0,
         footprint_center_llh: [
           fp ? Number(fp[1]) : 0,
