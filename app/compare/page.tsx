@@ -56,7 +56,7 @@ export default function ComparePage() {
     <div className="flex h-screen flex-col overflow-hidden bg-[var(--bg)] text-[var(--fg)]">
       <Navbar />
       <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto flex max-w-[1600px] flex-col gap-5 px-4 py-5 sm:p-5">
+        <div className="mx-auto flex max-w-[1440px] flex-col gap-5 px-5 py-5 sm:px-6">
 
           {/* Page header */}
           <header className="flex flex-wrap items-center justify-between gap-3">
@@ -91,8 +91,99 @@ export default function ComparePage() {
 
           {/* Comparison matrix */}
           <Module label="Comparison" hint="Score components side by side">
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[480px] border-collapse">
+            {/* Mobile: per-case cards (hidden lg+) */}
+            <div className="flex flex-col gap-3 lg:hidden">
+              {weighted.map((w, i) => (
+                <div
+                  key={w.id}
+                  className="border border-[var(--line)] bg-[var(--bg-sunk)]"
+                  style={{ borderRadius: 2 }}
+                >
+                  <div className="flex items-center justify-between gap-3 border-b border-[var(--line)] px-4 py-3">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="mono text-[10px] tabular-nums tracking-[0.16em] text-[var(--fg-faint)]">
+                        C·{String(i + 1).padStart(2, "0")} · ×{w.weight.toFixed(2)}
+                      </span>
+                      <span
+                        className="display text-[15px] text-[var(--fg)]"
+                        style={{ letterSpacing: "-0.015em" }}
+                      >
+                        {w.name}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => run(w.id)}
+                      disabled={isRunning}
+                      className="mono shrink-0 border border-[var(--line-bright)] bg-transparent px-5 text-[11px] uppercase tracking-[0.16em] text-[var(--fg-mute)] transition-colors hover:border-[var(--phos)] hover:text-[var(--phos)] disabled:cursor-not-allowed disabled:opacity-40"
+                      style={{ borderRadius: 2, minHeight: 44 }}
+                    >
+                      {runningAllCaseId === w.id ? "…" : "Run"}
+                    </button>
+                  </div>
+                  {SCORE_ROWS.map((row) => {
+                    const val = w.score ? w.score[row.key] : null;
+                    const num =
+                      typeof val === "number" && Number.isFinite(val)
+                        ? val
+                        : null;
+                    const max = row.key === "S_orbit" ? S_ORBIT_MAX : 1;
+                    return (
+                      <div
+                        key={row.key}
+                        className={
+                          "flex items-center justify-between border-b border-[var(--line)] px-4 py-2.5 last:border-b-0" +
+                          (row.bold ? " bg-[var(--bg-lift)]" : "")
+                        }
+                      >
+                        <span
+                          className={
+                            row.bold
+                              ? "mono text-[11px] uppercase tracking-[0.14em] text-[var(--fg)]"
+                              : "text-[12px] text-[var(--fg-mute)]"
+                          }
+                        >
+                          {row.label}
+                        </span>
+                        <div className="flex items-center gap-3">
+                          {num !== null ? (
+                            <>
+                              <div className="relative h-[2px] w-12 bg-[var(--line)]">
+                                <span
+                                  aria-hidden
+                                  className="absolute inset-y-0 left-0"
+                                  style={{
+                                    width: `${Math.max(0, Math.min(1, num / max)) * 100}%`,
+                                    background: row.bold
+                                      ? "var(--phos)"
+                                      : "var(--fg-mute)",
+                                  }}
+                                />
+                              </div>
+                              <span
+                                className="numeric tabular-nums leading-none"
+                                style={{
+                                  fontSize: row.bold ? 22 : 18,
+                                  letterSpacing: "-0.04em",
+                                  color: row.bold ? "var(--phos)" : "var(--fg)",
+                                }}
+                              >
+                                {num.toFixed(3)}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="mono text-[13px] text-[var(--fg-ghost)]">—</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+            {/* Desktop: unified table (hidden below lg) */}
+            <div className="hidden lg:block">
+              <table className="w-full border-collapse">
                 {/* Column headers */}
                 <thead>
                   <tr className="border-b border-[var(--line-bright)]">
@@ -119,8 +210,8 @@ export default function ComparePage() {
                               type="button"
                               onClick={() => run(w.id)}
                               disabled={isRunning}
-                              className="mono border border-[var(--line-bright)] bg-transparent px-2 py-0.5 text-[9px] uppercase tracking-[0.16em] text-[var(--fg-mute)] transition-colors hover:border-[var(--phos)] hover:text-[var(--phos)] disabled:cursor-not-allowed disabled:opacity-40"
-                              style={{ borderRadius: 2 }}
+                              className="mono border border-[var(--line-bright)] bg-transparent px-3 py-1.5 text-[10px] uppercase tracking-[0.16em] text-[var(--fg-mute)] transition-colors hover:border-[var(--phos)] hover:text-[var(--phos)] disabled:cursor-not-allowed disabled:opacity-40"
+                              style={{ borderRadius: 2, minHeight: 32 }}
                             >
                               {runningAllCaseId === w.id ? "…" : "Run"}
                             </button>
@@ -249,4 +340,4 @@ export default function ComparePage() {
       <StatusBar />
     </div>
   );
-}
+}

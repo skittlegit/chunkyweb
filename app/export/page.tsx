@@ -22,7 +22,7 @@ export default function ExportPage() {
     <div className="flex h-screen flex-col overflow-hidden bg-[var(--bg)] text-[var(--fg)]">
       <Navbar />
       <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto flex max-w-[1600px] flex-col gap-5 px-4 py-5 sm:p-5">
+        <div className="mx-auto flex max-w-[1440px] flex-col gap-5 px-5 py-5 sm:px-6">
           <header className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-baseline gap-4">
               <span className="eyebrow text-[var(--fg-faint)]">Export</span>

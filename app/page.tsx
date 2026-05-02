@@ -178,12 +178,12 @@ export default function ConsolePage() {
       <div className="flex flex-1 flex-col overflow-y-auto lg:flex-row lg:overflow-hidden">
 
         {/* Left control rail */}
-        <aside className="flex w-full shrink-0 flex-col border-b border-[var(--line)] lg:w-[260px] lg:overflow-y-auto lg:border-b-0 lg:border-r">
+        <aside className="flex w-full shrink-0 flex-col border-b border-[var(--line)] lg:w-[288px] lg:overflow-y-auto lg:border-b-0 lg:border-r">
 
           {/* Mission mini — per-case scores + S_total */}
           {mission && mission.rows.length > 0 && (
             <div className="border-b border-[var(--line)]">
-              <div className="px-4 py-2.5 sm:px-5">
+              <div className="px-5 py-3">
                 <span className="eyebrow">Mission</span>
               </div>
               {mission.rows.map((r, i) => {
@@ -194,7 +194,7 @@ export default function ConsolePage() {
                     type="button"
                     onClick={() => selectCase(r.id)}
                     className={cn(
-                      "flex w-full items-baseline justify-between border-t border-[var(--line)] px-4 py-2 text-left transition-colors hover:bg-[var(--bg-lift)] sm:px-5",
+                      "flex w-full items-baseline justify-between border-t border-[var(--line)] px-5 py-2.5 text-left transition-colors hover:bg-[var(--bg-lift)]",
                       active && "bg-[var(--bg-lift)]"
                     )}
                   >
@@ -215,7 +215,7 @@ export default function ConsolePage() {
                   </button>
                 );
               })}
-              <div className="flex items-baseline justify-between border-t border-[var(--line-bright)] px-4 py-2.5 sm:px-5">
+              <div className="flex items-baseline justify-between border-t border-[var(--line-bright)] px-5 py-3">
                 <span className="eyebrow">S_total</span>
                 <span
                   className="numeric tabular-nums leading-none text-[var(--phos)]"
@@ -231,7 +231,7 @@ export default function ConsolePage() {
 
           {/* Controls — only for individual case view */}
           {!isOverview && (
-            <div className="flex flex-col gap-5 p-4 sm:p-5">
+            <div className="flex flex-col gap-5 p-5">
               <div className="flex flex-col gap-3">
                 <span className="eyebrow">Strategy</span>
                 <StrategyPicker />
@@ -247,9 +247,60 @@ export default function ConsolePage() {
         {/* ── Main content panels ────────────────────────────────────── */}
         <main className="flex flex-1 flex-col overflow-y-auto">
           {isOverview ? (
-            <div className="p-4 sm:p-5">
+            <div className="p-5 sm:p-6">
               <Module label="Mission Breakdown" hint="Score components per case">
-                <div className="overflow-x-auto">
+                {/* Mobile: compact score list */}
+                <div className="flex flex-col sm:hidden">
+                  {(cases ?? []).map((c, i) => {
+                    const r = results[c.id];
+                    const score = r?.simulate?.score;
+                    const isActive = runningAllCaseId === c.id;
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => selectCase(c.id)}
+                        className={cn(
+                          "flex items-center justify-between border-b border-[var(--line)] py-3 text-left transition-colors last:border-b-0 hover:bg-[var(--bg-lift)]",
+                          isActive && "bg-[var(--bg-lift)]"
+                        )}
+                      >
+                        <div className="flex items-center gap-3">
+                          {isActive && (
+                            <StatusDot status="warn" pulse className="shrink-0" />
+                          )}
+                          <span className="mono text-[10px] tabular-nums tracking-[0.16em] text-[var(--fg-faint)]">
+                            C·{String(i + 1).padStart(2, "0")}
+                          </span>
+                          <span className="text-[13px] text-[var(--fg)]">{c.name}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span
+                            className="numeric tabular-nums leading-none"
+                            style={{
+                              fontSize: 18,
+                              letterSpacing: "-0.03em",
+                              color: score ? "var(--fg)" : "var(--fg-ghost)",
+                            }}
+                          >
+                            {score ? score.S_orbit.toFixed(3) : "———"}
+                          </span>
+                          <span className="mono text-[10px]">
+                            {isActive ? (
+                              <span style={{ color: "var(--warn)" }}>running</span>
+                            ) : score ? (
+                              <span style={{ color: "var(--phos)" }}>done</span>
+                            ) : (
+                              <span style={{ color: "var(--fg-faint)" }}>pending</span>
+                            )}
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+                {/* Desktop: full breakdown table */}
+                <div className="hidden overflow-x-auto sm:block">
                   <table className="w-full min-w-[520px] border-collapse text-[12px]">
                     <thead>
                       <tr className="border-b border-[var(--line)]">
@@ -383,10 +434,11 @@ export default function ConsolePage() {
                     </tbody>
                   </table>
                 </div>
+                </div>
               </Module>
             </div>
           ) : (
-            <div className="flex flex-col gap-4 p-4 sm:p-5">
+            <div className="flex flex-col gap-5 p-5 sm:p-6">
               {/* Coverage map + Score card */}
               <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.7fr_1fr]">
                 <Module label="Coverage" variant="live" contentClassName="p-0">
