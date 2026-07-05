@@ -14,7 +14,10 @@ import type {
 } from "./types";
 
 const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") || "http://localhost:8000";
+  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ||
+  (process.env.NODE_ENV === "development"
+    ? "http://localhost:8000"
+    : "https://chunkyapi.onrender.com");
 
 export class ApiError extends Error {
   status: number;
